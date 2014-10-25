@@ -38,18 +38,14 @@ void agents_controller( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	forwardspeed = 3 ;  
+	forwardspeed = 0.05 ;  
 	a = w->agents[0] ; /* get agent pointer */
+	h = 0.0
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
 	if( a->instate->metabolic_charge>0.0 )
 	{
-		// move the agents body
-		//set_forward_speed_agent( a, forwardspeed ) ;
-		//move_body_agent( a ) ;
-
-		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 		basal_metabolism_agent( a ) ;
 		simtime++ ;
 
@@ -67,17 +63,9 @@ void agents_controller( WORLD_TYPE *w )
 		restore_objects_to_world( Flatworld ) ;  /* restore all of the objects back into the world */
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
-		x = 0;//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		
-		h = a->outstate->body_angle;
-		h += 1;
-
-		if (h == 360)
-			h = 0;
-
-		printf("%d", maxnlifetimes);
-
+		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		h = distributions_uniform( -179.0, 179.0) ;
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
 		
