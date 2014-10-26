@@ -15,10 +15,12 @@
  *
  */
 
- // Architecture 1
+ // Architecture 2
 
-float speed[1000];
 int lifetimes[1000];
+int red[1000];
+int blue[1000];
+int green[1000];
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -44,7 +46,7 @@ void agents_controller( WORLD_TYPE *w )
 	
 	/* Initialize */
 	//forwardspeed = 0.05 * nlifetimes; 
-	forwardspeed = (0.1 / maxnlifetimes) * nlifetimes;
+	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
 	h = 0.0;
 	
@@ -52,6 +54,53 @@ void agents_controller( WORLD_TYPE *w )
 		 reset agent & world */
 	if( a->instate->metabolic_charge>0.0 )
 	{
+		collision_flag = read_soma_sensor(w, a);		 	
+		skinvalues = extract_soma_receptor_values_pointer( a );
+		nsomareceptors = get_number_of_soma_receptors( a );
+
+		
+		// Collision Neuron
+		float weights[8] = {1, 1, 0, 0, 0, 0, 0, 1, 0};
+
+		int i;
+		float v_col;
+		int y_col;
+
+			for (i=0; i<8; i++)
+			{
+				v_col += skinvalues[i][0] * weights[i];
+			}
+
+		if (v_col > 0.0)
+			y_col = 1;
+		else
+			y_col = 0;
+
+		// Eat Neuron
+		int v_eat;
+		float weight = 1;
+		v_eat = y_col * weight;
+
+		if (v_eat > 0)
+			delta_energy = eat_colliding_object(w, a, 1);
+
+
+
+
+		/*
+		for( k=0 ; k<nsomareceptors ; k++ )
+		{
+			if (skinvalues[k][0] <= 0.0)
+				printf("----- %f", skinvalues[k][0]);
+
+			if( (k==0 || k==1 || k==7 ) && skinvalues[k][0]>0.0 )
+			{
+				delta_energy = eat_colliding_object( w, a, k) ;
+			}
+		}
+		*/
+
+
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
@@ -64,8 +113,8 @@ void agents_controller( WORLD_TYPE *w )
 	else
 	{		
 
-		speed[nlifetimes] = forwardspeed;
-		lifetimes[nlifetimes] = simtime;
+		//speed[nlifetimes] = forwardspeed;
+		//lifetimes[nlifetimes] = simtime;
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
@@ -105,6 +154,7 @@ void agents_controller( WORLD_TYPE *w )
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
 			// Write out data
+			/*
 			FILE *fp;
 			fp = fopen("./Results/Arch1 Lifetime vs Speed.csv", "w");
 			int i;
@@ -114,6 +164,7 @@ void agents_controller( WORLD_TYPE *w )
 				fprintf(fp, "%f, %d\n", speed[i], lifetimes[i]);
 			}
 			fclose(fp);
+			*/
 
 
 			exit(0) ;

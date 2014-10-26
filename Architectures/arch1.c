@@ -44,7 +44,7 @@ void agents_controller( WORLD_TYPE *w )
 	
 	/* Initialize */
 	//forwardspeed = 0.05 * nlifetimes; 
-	forwardspeed = (0.1 / maxnlifetimes) * nlifetimes;
+	forwardspeed = (0.1 / maxnlifetimes) * (nlifetimes+1);
 	a = w->agents[0] ; /* get agent pointer */
 	h = 0.0;
 	
