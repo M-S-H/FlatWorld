@@ -15,6 +15,11 @@
  *
  */
 
+ // Architecture 1
+
+float speed[1000];
+int lifetimes[1000];
+
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
@@ -38,9 +43,10 @@ void agents_controller( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	forwardspeed = 0.05 ;  
+	//forwardspeed = 0.05 * nlifetimes; 
+	forwardspeed = (0.1 / maxnlifetimes) * nlifetimes;
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0
+	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
@@ -57,6 +63,10 @@ void agents_controller( WORLD_TYPE *w )
 	} // end agent alive condition
 	else
 	{		
+
+		speed[nlifetimes] = forwardspeed;
+		lifetimes[nlifetimes] = simtime;
+
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
 		now = time(NULL) ;
@@ -68,10 +78,20 @@ void agents_controller( WORLD_TYPE *w )
 		restore_objects_to_world( Flatworld ) ;  /* restore all of the objects back into the world */
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
-		x = 0;//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		h += 90;
+
+		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		
+		// Slightly Rotate the agent
+		h = a->outstate->body_angle;
+		h += 5;
+
 		//h = distributions_uniform( -179.0, 179.0) ;
+
+		// Collect Data
+		
+
+
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
 		
@@ -82,7 +102,20 @@ void agents_controller( WORLD_TYPE *w )
 		if( nlifetimes >= maxnlifetimes )
 		{
 			avelifetime /= (float)maxnlifetimes ;
-			printf("\nAverage lifetime: %f\n",avelifetime) ;
+			printf("\nAverage lifetime: %f\n",avelifetime);
+
+			// Write out data
+			FILE *fp;
+			fp = fopen("./Results/Arch1 Lifetime vs Speed.csv", "w");
+			int i;
+			for(i=0; i<maxnlifetimes; i++)
+			{
+				//printf("%d\n", nlifetimes);
+				fprintf(fp, "%f, %d\n", speed[i], lifetimes[i]);
+			}
+			fclose(fp);
+
+
 			exit(0) ;
 		}
 		

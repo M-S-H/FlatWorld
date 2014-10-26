@@ -84,10 +84,17 @@ int main(int argc, char** argv)
   strftime(timestamp, 30, "%y/%m/%d H: %H M: %M S: %S",date) ;
   printf("main- Start time: %s\n",timestamp) ;
 
+  while (1)
+  {
+    agents_controller(Flatworld);
+  }
+
+  /*
   while (nlifetimes < maxnlifetimes)
   {
     agents_controller(Flatworld);
   }
+  */
 
   /*
   for( t=0 ; t<100000 ; t++ )

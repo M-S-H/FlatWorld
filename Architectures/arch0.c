@@ -15,6 +15,8 @@
  *
  */
 
+ // Architecture 0
+
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
