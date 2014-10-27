@@ -26,7 +26,9 @@ FWmain.o: FWmain.c
 clean:
 	-rm -f *.o FWmain
 ng: FWmainNG.c Controller.c
-	gcc FWmainNG.c -o FWmainNG; ./FWmainNG
+	gcc FWmainNG.c -o FWmainNG
+rng:
+	./FWmainNG
 r:
 	make clean; make
 run:

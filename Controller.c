@@ -23,8 +23,10 @@ int blue = 0;
 int green = 0;
 float class_errors = 0;
 
-float class_weights[4] = {0.5,0.5,0.5,0.5};
-float se[500];
+//float class_weights[4] = {0,0.5,0.5,0.5};
+float class_weights[4] = {0,0,0,0};
+float se[720] = {0};
+float rms[720] = {0};
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -86,12 +88,14 @@ void agents_controller( WORLD_TYPE *w )
 		v_eat = y_col * weight;
 
 
-		float desired_value = 1;
+		float desired_value = 0;
 
 		if (v_eat > 0)
 		{
 			read_visual_sensor(w, a) ;
 			eyevalues = extract_visual_receptor_values_pointer(a, 0);
+
+			int mvs = intensity_winner_takes_all( a );
 
 			delta_energy = eat_colliding_object(w, a, 0);
 
@@ -103,13 +107,13 @@ void agents_controller( WORLD_TYPE *w )
 			}
 			else if (delta_energy < 0.0)
 			{
-				desired_value = 0.0
+				desired_value = -1.0;
 				//printf ("-- I ate a red!\n");
 				red += 1;
 			}
 			else if (delta_energy == 0.0)
 			{
-				desired_value = 0.0
+				desired_value = -1.0;
 				//printf ("-- I ate a blue!\n");
 				blue += 1;
 			}
@@ -118,7 +122,8 @@ void agents_controller( WORLD_TYPE *w )
 			
 			float v_class = 0;
 
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+			//float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+			float inputs[4] = {1, eyevalues[mvs][0], eyevalues[mvs][1], eyevalues[mvs][2]};
 
 			printf("\n\n");
 			for (i=0; i<4; i++)
@@ -129,10 +134,10 @@ void agents_controller( WORLD_TYPE *w )
 
 			printf("V: %f\n", v_class);
 
-			float y_class = 0;
+			float y_class = -1.0;
 
-			if (v_class > 0)
-				y_class = 1;
+			if (v_class > 0.0)
+				y_class = 1.0;
 
 			printf("Y: %f\n", y_class);
 			printf("D: %f\n", desired_value);
@@ -142,6 +147,8 @@ void agents_controller( WORLD_TYPE *w )
 
 			float error = 0;
 			error = desired_value - y_class;
+
+			rms[nlifetimes] += error * error;
 
 			printf("Error: %f\n", error);
 			//class_errors += error * error;
@@ -159,7 +166,8 @@ void agents_controller( WORLD_TYPE *w )
 
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		basal_metabolism_agent(a) ;
+		//for (i=0; i<5; i++)
+			basal_metabolism_agent(a) ;
 		simtime++ ;
 
 	} // end agent alive condition
@@ -186,7 +194,7 @@ void agents_controller( WORLD_TYPE *w )
 		
 		// Slightly Rotate the agent
 		h = a->outstate->body_angle;
-		h += 5;
+		h += 1;
 
 		for (i=0; i<4; i++)
 			printf("%f\t", class_weights[i]);
@@ -197,10 +205,17 @@ void agents_controller( WORLD_TYPE *w )
 
 		// class_errors = sqrt(class_errors);
 
+		if (red+blue+green != 0)
+			rms[nlifetimes] = sqrt(rms[nlifetimes] / (red+blue+green));
+		else
+			rms[nlifetimes] = 0;
+
 		red = blue = green = 0;
 
 		se[nlifetimes] = class_errors;
 		class_errors = 0;
+
+		
 
 		//h = distributions_uniform( -179.0, 179.0) ;
 
@@ -232,7 +247,16 @@ void agents_controller( WORLD_TYPE *w )
 				fprintf(fp, "%d, %f\n", i, se[i]);
 			}
 			fclose(fp);
-			
+
+
+			//FILE *fp;
+			fp = fopen("./Results/Arch3 RMS.csv", "w");
+			for(i=0; i<maxnlifetimes; i++)
+			{
+				//if (rms[i] != 0)
+					fprintf(fp, "%d, %f\n", i, rms[i]);
+			}
+			fclose(fp);
 
 			exit(0) ;
 		}
