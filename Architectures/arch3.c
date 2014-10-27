@@ -15,7 +15,7 @@
  *
  */
 
- // Architecture 2
+ // Architecture 3
 
 float energy[5000];
 int red = 0;
@@ -55,63 +55,56 @@ void agents_controller( WORLD_TYPE *w )
 	if( a->instate->metabolic_charge>0.0 )
 	{	
 		// Collision Neuron
-		int sensor[3] = {0,1,7};
-		int j;
 
-		for (j=0; j<3; j++) 
+		collision_flag = read_soma_sensor(w, a);		 	
+		skinvalues = extract_soma_receptor_values_pointer( a );
+		nsomareceptors = get_number_of_soma_receptors( a );
+
+		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+
+		int i;
+		float v_col = 0;
+		int y_col = 0;
+
+		//printf("\n--------\n");
+		for (i=0; i<8; i++)
 		{
-			collision_flag = read_soma_sensor(w, a);		 	
-			skinvalues = extract_soma_receptor_values_pointer( a );
-			nsomareceptors = get_number_of_soma_receptors( a );
-
-			float weights[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-			weights[sensor[j]] = 1;
-
-			int i;
-			float v_col = 0;
-			int y_col = 0;
-
-			//printf("\n--------\n");
-			for (i=0; i<8; i++)
-			{
-				v_col += skinvalues[i][0] * weights[i];
-				//printf("\tSkinValue: %f", skinvalues[i][0]);
-			}
-			//printf("\n--------\n");
-
-			if (v_col > 0.0)
-				y_col = 1;
-			else
-				y_col = 0;
-
-			// Eat Neuron
-			int v_eat = 0;
-			int weight = 1;
-			v_eat = y_col * weight;
-
-
-			if (v_eat > 0)
-			{
-				k = sensor[j];
-				delta_energy = eat_colliding_object(w, a, k);
-
-				if (delta_energy > 0.0)
-				{
-					//printf ("-- I ate a green!\n");
-					green += 1;
-				}
-				else if (delta_energy < 0.0)
-				{
-					//printf ("-- I ate a red!\n");
-					red += 1;
-				}
-				else if (delta_energy == 0.0)
-				{
-					//printf ("-- I ate a blue!\n");
-					blue += 1;
-				}
-			}			
+			v_col += skinvalues[i][0] * weights[i];
+			//printf("\tSkinValue: %f", skinvalues[i][0]);
 		}
+		//printf("\n--------\n");
+
+		if (v_col > 0.0)
+			y_col = 1;
+		else
+			y_col = 0;
+
+		// Eat Neuron
+		int v_eat = 0;
+		int weight = 1;
+		v_eat = y_col * weight;
+
+
+		if (v_eat > 0)
+		{
+			delta_energy = eat_colliding_object(w, a, 0);
+
+			if (delta_energy > 0.0)
+			{
+				//printf ("-- I ate a green!\n");
+				green += 1;
+			}
+			else if (delta_energy < 0.0)
+			{
+				//printf ("-- I ate a red!\n");
+				red += 1;
+			}
+			else if (delta_energy == 0.0)
+			{
+				//printf ("-- I ate a blue!\n");
+				blue += 1;
+			}
+		}		
 
 		energy[simtime] = a->instate->metabolic_charge;
 

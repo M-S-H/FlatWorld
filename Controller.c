@@ -15,12 +15,16 @@
  *
  */
 
- // Architecture 2
+ // Architecture 3
 
-int lifetimes[1000];
-int red[1000];
-int blue[1000];
-int green[1000];
+float energy[5000];
+int red = 0;
+int blue = 0;
+int green = 0;
+float class_errors = 0;
+
+float class_weights[4] = {0.5,0.5,0.5,0.5};
+float se[500];
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -46,30 +50,30 @@ void agents_controller( WORLD_TYPE *w )
 	
 	/* Initialize */
 	//forwardspeed = 0.05 * nlifetimes; 
-	forwardspeed = 0.05;
+	forwardspeed = 0.1;
 	a = w->agents[0] ; /* get agent pointer */
 	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
 	if( a->instate->metabolic_charge>0.0 )
-	{
+	{	
+		// Collision Neuron
+
 		collision_flag = read_soma_sensor(w, a);		 	
 		skinvalues = extract_soma_receptor_values_pointer( a );
 		nsomareceptors = get_number_of_soma_receptors( a );
 
-		
-		// Collision Neuron
-		float weights[8] = {1, 1, 0, 0, 0, 0, 0, 1, 0};
+		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
 
 		int i;
-		float v_col;
-		int y_col;
+		float v_col = 0;
+		int y_col = 0;
 
-			for (i=0; i<8; i++)
-			{
-				v_col += skinvalues[i][0] * weights[i];
-			}
+		for (i=0; i<8; i++)
+		{
+			v_col += skinvalues[i][0] * weights[i];
+		}
 
 		if (v_col > 0.0)
 			y_col = 1;
@@ -77,36 +81,85 @@ void agents_controller( WORLD_TYPE *w )
 			y_col = 0;
 
 		// Eat Neuron
-		int v_eat;
-		float weight = 1;
+		int v_eat = 0;
+		int weight = 1;
 		v_eat = y_col * weight;
 
+
+		float desired_value = 1;
+
 		if (v_eat > 0)
-			delta_energy = eat_colliding_object(w, a, 1);
-
-
-
-
-		/*
-		for( k=0 ; k<nsomareceptors ; k++ )
 		{
-			if (skinvalues[k][0] <= 0.0)
-				printf("----- %f", skinvalues[k][0]);
+			read_visual_sensor(w, a) ;
+			eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
-			if( (k==0 || k==1 || k==7 ) && skinvalues[k][0]>0.0 )
+			delta_energy = eat_colliding_object(w, a, 0);
+
+			if (delta_energy > 0.0)
 			{
-				delta_energy = eat_colliding_object( w, a, k) ;
+				desired_value = 1.0;
+				//printf ("-- I ate a green!\n");
+				green += 1;
 			}
-		}
-		*/
+			else if (delta_energy < 0.0)
+			{
+				desired_value = 0.0
+				//printf ("-- I ate a red!\n");
+				red += 1;
+			}
+			else if (delta_energy == 0.0)
+			{
+				desired_value = 0.0
+				//printf ("-- I ate a blue!\n");
+				blue += 1;
+			}
+
+			// Classification Neuron
+			
+			float v_class = 0;
+
+			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+
+			printf("\n\n");
+			for (i=0; i<4; i++)
+			{
+				printf("Input: %f\n", inputs[i]);
+				v_class += inputs[i] * class_weights[i];
+			}
+
+			printf("V: %f\n", v_class);
+
+			float y_class = 0;
+
+			if (v_class > 0)
+				y_class = 1;
+
+			printf("Y: %f\n", y_class);
+			printf("D: %f\n", desired_value);
+
+			if (y_class == 1 && desired_value != 1)
+				class_errors += 1;
+
+			float error = 0;
+			error = desired_value - y_class;
+
+			printf("Error: %f\n", error);
+			//class_errors += error * error;
+
+			for (i=0; i<4; i++)
+				class_weights[i] += 0.1 * error * inputs[i];
+		}		
+
+		energy[simtime] = a->instate->metabolic_charge;
 
 
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
 
+
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		basal_metabolism_agent( a ) ;
+		basal_metabolism_agent(a) ;
 		simtime++ ;
 
 	} // end agent alive condition
@@ -120,7 +173,7 @@ void agents_controller( WORLD_TYPE *w )
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
 		now = time(NULL) ;
 		date = localtime( &now ) ;
-		strftime(timestamp, 30, "%y/%m/%d H: %H M: %M S: %S",date) ;
+		strftime(timestamp, 30, "%y/%m/%d H: %H M: %M S: %S",date);
 		printf("Death time: %s\n",timestamp) ;
 		
 		// Example as to how to restore the world and agent after it dies. */
@@ -135,41 +188,56 @@ void agents_controller( WORLD_TYPE *w )
 		h = a->outstate->body_angle;
 		h += 5;
 
+		for (i=0; i<4; i++)
+			printf("%f\t", class_weights[i]);
+		printf("\n");
+
+		// if (red+blue+green != 0)
+		// 	class_errors /= (red+blue+green);
+
+		// class_errors = sqrt(class_errors);
+
+		red = blue = green = 0;
+
+		se[nlifetimes] = class_errors;
+		class_errors = 0;
+
 		//h = distributions_uniform( -179.0, 179.0) ;
 
 		// Collect Data
 		
-
+		//printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
-		
 		/* Accumulate lifetime statistices */
 		avelifetime += (float)simtime ;
-		simtime = 0 ;
+		
 		nlifetimes++ ;
 		if( nlifetimes >= maxnlifetimes )
 		{
 			avelifetime /= (float)maxnlifetimes ;
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
+			printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
+
 			// Write out data
-			/*
+			
+			
 			FILE *fp;
-			fp = fopen("./Results/Arch1 Lifetime vs Speed.csv", "w");
+			fp = fopen("./Results/Arch3 Error.csv", "w");
 			int i;
 			for(i=0; i<maxnlifetimes; i++)
 			{
-				//printf("%d\n", nlifetimes);
-				fprintf(fp, "%f, %d\n", speed[i], lifetimes[i]);
+				fprintf(fp, "%d, %f\n", i, se[i]);
 			}
 			fclose(fp);
-			*/
-
+			
 
 			exit(0) ;
 		}
 		
+		simtime = 0;
 		
 		
 	} /* end agent dead condition */

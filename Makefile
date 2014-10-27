@@ -22,7 +22,12 @@ FWmain: $(FILES)
 	 $(CC) -g -Wall $(COPTS) $(FILES) $(IPATH) $(LPATH) $(LDLIBS) -o FWmain
 
 FWmain.o: FWmain.c 
-
 	$(CC) -c -Wall $(COPTS) $(IPATH) FWmain.c
 clean:
 	-rm -f *.o FWmain
+ng: FWmainNG.c Controller.c
+	gcc FWmainNG.c -o FWmainNG; ./FWmainNG
+r:
+	make clean; make
+run:
+	make clean; make; ./FWmain
