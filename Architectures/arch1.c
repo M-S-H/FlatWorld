@@ -17,8 +17,11 @@
 
  // Architecture 1
 
-float speed[1000];
-int lifetimes[1000];
+float speed[200];
+int lifetimes[200];
+
+float energy[3][5001];
+//int time[6000]
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -42,10 +45,8 @@ void agents_controller( WORLD_TYPE *w )
 	struct tm *date ;
 	char timestamp[30] ;
 	
-	/* Initialize */
-	//forwardspeed = 0.05 * nlifetimes; 
-	forwardspeed = (0.1 / maxnlifetimes) * (nlifetimes+1);
-	a = w->agents[0] ; /* get agent pointer */
+	forwardspeed = 0.0005 * nlifetimes;
+	a = w->agents[0]; /* get agent pointer */
 	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
@@ -58,15 +59,18 @@ void agents_controller( WORLD_TYPE *w )
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 		basal_metabolism_agent( a ) ;
-		simtime++ ;
+		simtime++;
+
+		if (nlifetimes == 0)
+			energy[0][simtime] = a->instate->metabolic_charge;
+		else if (nlifetimes == 100)
+			energy[1][simtime] = a->instate->metabolic_charge;
+		else if (nlifetimes == 199)
+			energy[2][simtime] = a->instate->metabolic_charge;
 
 	} // end agent alive condition
 	else
-	{		
-
-		speed[nlifetimes] = forwardspeed;
-		lifetimes[nlifetimes] = simtime;
-
+	{	
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
 		now = time(NULL) ;
@@ -79,17 +83,16 @@ void agents_controller( WORLD_TYPE *w )
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
 
-		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		x = 0;
+		y = 0;
 		
 		// Slightly Rotate the agent
 		h = a->outstate->body_angle;
 		h += 5;
 
-		//h = distributions_uniform( -179.0, 179.0) ;
-
 		// Collect Data
-		
+		speed[nlifetimes] = forwardspeed;
+		lifetimes[nlifetimes] = simtime;
 
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
@@ -104,24 +107,23 @@ void agents_controller( WORLD_TYPE *w )
 			avelifetime /= (float)maxnlifetimes ;
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
-			// Write out data
+			// Lifetime vs Speed
 			FILE *fp;
 			fp = fopen("./Results/Arch1 Lifetime vs Speed.csv", "w");
 			int i;
 			for(i=0; i<maxnlifetimes; i++)
-			{
-				//printf("%d\n", nlifetimes);
 				fprintf(fp, "%f, %d\n", speed[i], lifetimes[i]);
-			}
+			fclose(fp);
+
+
+			// Energy vs Time
+			fp = fopen("./Results/Arch1 Energy vs Time.csv", "w");
+			for (i=0; i<5001; i++)
+				fprintf(fp, "%d, %f, %f, %f\n", i, energy[0][i], energy[1][i], energy[2][i]);
 			fclose(fp);
 
 
 			exit(0) ;
 		}
-		
-		
-		
 	} /* end agent dead condition */
-	
-	
 }

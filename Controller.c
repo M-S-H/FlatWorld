@@ -15,18 +15,20 @@
  *
  */
 
- // Architecture 3
+ // Architecture 2
 
-float energy[5000];
+float energy[36][5001];
+int food_lifetime[10] = {0};
+int food_freq[10] = {0};
+int max_food_eaten = 0;
+
 int red = 0;
 int blue = 0;
 int green = 0;
-float class_errors = 0;
 
-//float class_weights[4] = {0,0.5,0.5,0.5};
-float class_weights[4] = {0,0,0,0};
-float se[720] = {0};
-float rms[720] = {0};
+int r = 0;
+int b = 0;
+int g = 0;
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -73,9 +75,7 @@ void agents_controller( WORLD_TYPE *w )
 		int y_col = 0;
 
 		for (i=0; i<8; i++)
-		{
 			v_col += skinvalues[i][0] * weights[i];
-		}
 
 		if (v_col > 0.0)
 			y_col = 1;
@@ -87,77 +87,34 @@ void agents_controller( WORLD_TYPE *w )
 		int weight = 1;
 		v_eat = y_col * weight;
 
-
-		float desired_value = 0;
-
 		if (v_eat > 0)
 		{
-			read_visual_sensor(w, a) ;
-			eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-			int mvs = intensity_winner_takes_all( a );
-
 			delta_energy = eat_colliding_object(w, a, 0);
 
 			if (delta_energy > 0.0)
 			{
-				desired_value = 1.0;
 				//printf ("-- I ate a green!\n");
-				green += 1;
+				g += 1;
 			}
 			else if (delta_energy < 0.0)
 			{
-				desired_value = -1.0;
 				//printf ("-- I ate a red!\n");
-				red += 1;
+				r += 1;
 			}
 			else if (delta_energy == 0.0)
 			{
-				desired_value = -1.0;
 				//printf ("-- I ate a blue!\n");
-				blue += 1;
+				b += 1;
 			}
-
-			// Classification Neuron
-			
-			float v_class = 0;
-
-			//float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
-			float inputs[4] = {1, eyevalues[mvs][0], eyevalues[mvs][1], eyevalues[mvs][2]};
-
-			printf("\n\n");
-			for (i=0; i<4; i++)
-			{
-				printf("Input: %f\n", inputs[i]);
-				v_class += inputs[i] * class_weights[i];
-			}
-
-			printf("V: %f\n", v_class);
-
-			float y_class = -1.0;
-
-			if (v_class > 0.0)
-				y_class = 1.0;
-
-			printf("Y: %f\n", y_class);
-			printf("D: %f\n", desired_value);
-
-			if (y_class == 1 && desired_value != 1)
-				class_errors += 1;
-
-			float error = 0;
-			error = desired_value - y_class;
-
-			rms[nlifetimes] += error * error;
-
-			printf("Error: %f\n", error);
-			//class_errors += error * error;
-
-			for (i=0; i<4; i++)
-				class_weights[i] += 0.1 * error * inputs[i];
 		}		
 
-		energy[simtime] = a->instate->metabolic_charge;
+
+		if (nlifetimes % 36 == 0)
+		{
+			int e_index = nlifetimes / 36;
+			energy[e_index][simtime] = a->instate->metabolic_charge;
+		}
+		//energy[simtime] = a->instate->metabolic_charge;
 
 
 		// move the agents body
@@ -166,16 +123,29 @@ void agents_controller( WORLD_TYPE *w )
 
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		//for (i=0; i<5; i++)
-			basal_metabolism_agent(a) ;
+		basal_metabolism_agent(a) ;
 		simtime++ ;
 
 	} // end agent alive condition
 	else
 	{		
+		// Collect Data
 
-		//speed[nlifetimes] = forwardspeed;
-		//lifetimes[nlifetimes] = simtime;
+
+		if (r+b+g > max_food_eaten)
+		{
+			max_food_eaten = r+b+g;
+			printf("Max Food: %i", max_food_eaten);
+		}
+
+		food_lifetime[r+b+g] += simtime;
+		food_freq[r+b+g] += 1;
+
+		red += r;
+		blue += b;
+		green += g;
+
+		r = g = b = 0;
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
@@ -191,37 +161,20 @@ void agents_controller( WORLD_TYPE *w )
 
 		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
 		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		
 		// Slightly Rotate the agent
 		h = a->outstate->body_angle;
 		h += 1;
 
-		for (i=0; i<4; i++)
-			printf("%f\t", class_weights[i]);
-		printf("\n");
 
-		// if (red+blue+green != 0)
-		// 	class_errors /= (red+blue+green);
-
-		// class_errors = sqrt(class_errors);
-
-		if (red+blue+green != 0)
-			rms[nlifetimes] = sqrt(rms[nlifetimes] / (red+blue+green));
-		else
-			rms[nlifetimes] = 0;
-
-		red = blue = green = 0;
-
-		se[nlifetimes] = class_errors;
-		class_errors = 0;
-
-		
-
-		//h = distributions_uniform( -179.0, 179.0) ;
+		// x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		// y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		// h = distributions_uniform( -179.0, 179.0) ;
 
 		// Collect Data
 		
-		//printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
+		printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", r, b, g);
+
+		r = g = b = 0;
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
@@ -234,29 +187,37 @@ void agents_controller( WORLD_TYPE *w )
 			avelifetime /= (float)maxnlifetimes ;
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
-			printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
+			printf("Total Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
 
 			// Write out data
 			
-			
+			// Energy vs Time
 			FILE *fp;
-			fp = fopen("./Results/Arch3 Error.csv", "w");
+			fp = fopen("./Results/Arch2 Energy vs Time.csv", "w");
 			int i;
-			for(i=0; i<maxnlifetimes; i++)
+			for(i=0; i<5001; i++)
 			{
-				fprintf(fp, "%d, %f\n", i, se[i]);
+				fprintf(fp, "%d", i);
+				int j;
+				for (j=0; j<10; j++)
+					fprintf(fp, ", %f", energy[j][i]);
+				fprintf(fp, "\n");
+				//printf("%d\n", nlifetimes);
+				//fprintf(fp, "%d, %f\n", i, energy[i]);
 			}
 			fclose(fp);
 
-
-			//FILE *fp;
-			fp = fopen("./Results/Arch3 RMS.csv", "w");
-			for(i=0; i<maxnlifetimes; i++)
+			// AvgLifetime vs Food Eaten
+			fp = fopen("./Results/Arch2 AvgLifetime vs Food", "w");
+			for (i=0; i<max_food_eaten+1; i++)
 			{
-				//if (rms[i] != 0)
-					fprintf(fp, "%d, %f\n", i, rms[i]);
-			}
-			fclose(fp);
+				printf("%i, %i, %i\n", i, food_lifetime[i], food_freq[i]);
+				if (food_freq[i] > 0)
+					fprintf(fp, "%i, %i\n", i, (food_lifetime[i] / food_freq[i]));
+				else
+					fprintf(fp, "%i, %i\n", i, 0);
+			}	
+
 
 			exit(0) ;
 		}
@@ -265,6 +226,4 @@ void agents_controller( WORLD_TYPE *w )
 		
 		
 	} /* end agent dead condition */
-	
-	
 }

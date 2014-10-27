@@ -42,7 +42,7 @@ void agents_controller( WORLD_TYPE *w )
 	/* Initialize */
 	forwardspeed = 0.05 ;  
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0
+	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
@@ -81,9 +81,6 @@ void agents_controller( WORLD_TYPE *w )
 			printf("\nAverage lifetime: %f\n",avelifetime) ;
 			exit(0) ;
 		}
-		
-		
-		
 	} /* end agent dead condition */
 	
 	

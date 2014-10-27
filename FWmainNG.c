@@ -25,9 +25,9 @@
 /* Global pointer to current Flatworld */
 WORLD_TYPE *Flatworld ;
 int simtime = 0 ;
-int nlifetimes = 0, maxnlifetimes = 720;
+int nlifetimes = 0, maxnlifetimes = 360;
 int runflag = 1 ;
-float avelifetime = 0.0 ;
+float avelifetime = 0.0;
 
 #include "Distributions_Funcs.c"
 #include "FlatworldIICore.c"
