@@ -22,9 +22,10 @@ int red = 0;
 int blue = 0;
 int green = 0;
 float class_errors = 0;
+float total_errors = 0;
 
 //float class_weights[4] = {0,0.5,0.5,0.5};
-float class_weights[4] = {0,0,0,0};
+float class_weights[4] = {0.1,0.1,0.1,0.1};
 float se[720] = {0};
 float rms[720] = {0};
 
@@ -55,6 +56,14 @@ void agents_controller( WORLD_TYPE *w )
 	forwardspeed = 0.1;
 	a = w->agents[0] ; /* get agent pointer */
 	h = 0.0;
+
+	// Randomize initial weightss
+	if (nlifetimes == 0)
+	{
+		int i;
+		for(i=0; i<4; i++)
+			class_weights[i] = (double)rand() / (double)RAND_MAX;
+	}
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
@@ -122,7 +131,6 @@ void agents_controller( WORLD_TYPE *w )
 			
 			float v_class = 0;
 
-			//float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
 			float inputs[4] = {1, eyevalues[mvs][0], eyevalues[mvs][1], eyevalues[mvs][2]};
 
 			printf("\n\n");
@@ -159,7 +167,6 @@ void agents_controller( WORLD_TYPE *w )
 
 		energy[simtime] = a->instate->metabolic_charge;
 
-
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
@@ -189,12 +196,16 @@ void agents_controller( WORLD_TYPE *w )
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
 
-		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		// x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		// y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
 		
-		// Slightly Rotate the agent
-		h = a->outstate->body_angle;
-		h += 1;
+		// // Slightly Rotate the agent
+		// h = a->outstate->body_angle;
+		// h += 1;
+
+		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		h = distributions_uniform( -179.0, 179.0) ;
 
 		for (i=0; i<4; i++)
 			printf("%f\t", class_weights[i]);
@@ -210,12 +221,11 @@ void agents_controller( WORLD_TYPE *w )
 		else
 			rms[nlifetimes] = 0;
 
-		red = blue = green = 0;
+		//red = blue = green = 0;
 
 		se[nlifetimes] = class_errors;
+		total_errors += class_errors;
 		class_errors = 0;
-
-		
 
 		//h = distributions_uniform( -179.0, 179.0) ;
 
@@ -235,12 +245,13 @@ void agents_controller( WORLD_TYPE *w )
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
 			printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
+			printf("Error Rate: %f\n", total_errors/(red+green+blue));
 
 			// Write out data
 			
-			
+			// Classification Errors
 			FILE *fp;
-			fp = fopen("./Results/Arch3 Error.csv", "w");
+			fp = fopen("./Results/Arch3 Classification Errors.csv", "w");
 			int i;
 			for(i=0; i<maxnlifetimes; i++)
 			{
@@ -250,7 +261,7 @@ void agents_controller( WORLD_TYPE *w )
 
 
 			//FILE *fp;
-			fp = fopen("./Results/Arch3 RMS.csv", "w");
+			fp = fopen("./Results/Arch3 RMS Errors.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
 			{
 				//if (rms[i] != 0)

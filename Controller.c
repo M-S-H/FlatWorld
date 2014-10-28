@@ -21,6 +21,7 @@ float energy[36][5001];
 int food_lifetime[10] = {0};
 int food_freq[10] = {0};
 int max_food_eaten = 0;
+int lifetimes[360];
 
 int red = 0;
 int blue = 0;
@@ -130,7 +131,7 @@ void agents_controller( WORLD_TYPE *w )
 	else
 	{		
 		// Collect Data
-
+		lifetimes[nlifetimes] = simtime;
 
 		if (r+b+g > max_food_eaten)
 		{
@@ -208,7 +209,7 @@ void agents_controller( WORLD_TYPE *w )
 			fclose(fp);
 
 			// AvgLifetime vs Food Eaten
-			fp = fopen("./Results/Arch2 AvgLifetime vs Food", "w");
+			fp = fopen("./Results/Arch2 AvgLifetime vs Food.csv", "w");
 			for (i=0; i<max_food_eaten+1; i++)
 			{
 				printf("%i, %i, %i\n", i, food_lifetime[i], food_freq[i]);
@@ -216,7 +217,14 @@ void agents_controller( WORLD_TYPE *w )
 					fprintf(fp, "%i, %i\n", i, (food_lifetime[i] / food_freq[i]));
 				else
 					fprintf(fp, "%i, %i\n", i, 0);
-			}	
+			}
+			fclose(fp);
+
+			// Lifetimes
+			fp = fopen("./Results/Arch2 Lifetimes.csv", "w");
+			for (i=0; i<maxnlifetimes; i++)
+				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
+			fclose(fp);
 
 
 			exit(0) ;

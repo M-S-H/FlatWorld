@@ -21,6 +21,7 @@ float energy[36][5001];
 int food_lifetime[10] = {0};
 int food_freq[10] = {0};
 int max_food_eaten = 0;
+int lifetimes[5001];
 
 int red = 0;
 int blue = 0;
