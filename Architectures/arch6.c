@@ -61,32 +61,11 @@ void agents_controller( WORLD_TYPE *w )
 		int i;
 
 		// Compute Intensities
-		for (i=0; i<31; i++) 
-		{
-			float intensity;
-			intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
-			
-			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
-			
-			float v = 0;
-			int j;
-			for (j=0; j<4; j++)
-				v += classification[j] * inputs[j];
-
-			int y = 0;
-			
-			if (v > 0)
-				y = 1;
-
-			intensities[i] = (1*y) * (1*intensity);
-		}
-
-		int j;
-		for(j=0; j<31; j++)
-			printf("%d - %f {%f, %f, %f}\n", j, intensities[j], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
+		for (i=0; i<30; i++) 
+			intensities[i] = 0*eyevalues[i][0] + 1*eyevalues[i][1] + 0*eyevalues[i][2];
 
 		// Winner Take All
-		int max_intensity_index = 15;
+		int max_intensity_index =0;
 		float max_itensity = 0;
 		for (i=0; i<30; i++)
 		{

@@ -15,7 +15,7 @@
  *
  */
 
- // Architecture 5
+ // Architecture 4
 
 float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 float lifetime[360];
@@ -50,65 +50,17 @@ void agents_controller( WORLD_TYPE *w )
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
-
 	if( a->instate->metabolic_charge>0.0 )
 	{	
-		// Movement
-		read_visual_sensor(w,a);
-		eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-		float intensities[31];
-		int i;
-
-		// Compute Intensities
-		for (i=0; i<31; i++) 
-		{
-			float intensity;
-			intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
-			
-			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
-			
-			float v = 0;
-			int j;
-			for (j=0; j<4; j++)
-				v += classification[j] * inputs[j];
-
-			int y = 0;
-			
-			if (v > 0)
-				y = 1;
-
-			intensities[i] = (1*y) * (1*intensity);
-		}
-
-		int j;
-		for(j=0; j<31; j++)
-			printf("%d - %f {%f, %f, %f}\n", j, intensities[j], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
-
-		// Winner Take All
-		int max_intensity_index = 15;
-		float max_itensity = 0;
-		for (i=0; i<30; i++)
-		{
-			if (intensities[i] > max_itensity)
-			{
-				max_itensity = intensities[i];
-				max_intensity_index = i;
-			}
-		}
-
-		// Calculate Angle
-		float angles[31] = {-15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
-
-
 		// Collision Neuron
+
 		collision_flag = read_soma_sensor(w, a);		 	
 		skinvalues = extract_soma_receptor_values_pointer( a );
 		nsomareceptors = get_number_of_soma_receptors( a );
 
 		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+
+		int i;
 		float v_col = 0;
 		int y_col = 0;
 
@@ -205,5 +157,7 @@ void agents_controller( WORLD_TYPE *w )
 		simtime = 0;
 		
 		
-	} /* end agent dead condition */	
+	} /* end agent dead condition */
+	
+	
 }
