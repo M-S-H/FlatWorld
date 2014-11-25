@@ -81,10 +81,6 @@ void agents_controller( WORLD_TYPE *w )
 			intensities[i] = (1*y) * (1*intensity);
 		}
 
-		int j;
-		for(j=0; j<31; j++)
-			printf("%d - %f {%f, %f, %f}\n", j, intensities[j], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
-
 		// Winner Take All
 		int max_intensity_index = 15;
 		float max_itensity = 0;

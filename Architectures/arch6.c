@@ -15,7 +15,7 @@
  *
  */
 
- // Architecture 5
+ // Architecture 6
 
 float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 float lifetime[360];
