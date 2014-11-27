@@ -23,7 +23,7 @@ int lifetimes[200];
 float energy[3][5001];
 //int time[6000]
 
-void agents_controller( WORLD_TYPE *w )
+void arch1( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;

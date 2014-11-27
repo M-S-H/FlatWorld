@@ -25,11 +25,11 @@ float class_errors = 0;
 float total_errors = 0;
 
 //float class_weights[4] = {0,0.5,0.5,0.5};
-float class_weights[4] = {0.1,0.1,0.1,0.1};
+float class_weights[4] = {0.5, 0.5, 0.5, 0.5};
 float se[720] = {0};
 float rms[720] = {0};
 
-void agents_controller( WORLD_TYPE *w )
+void arch3( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;
@@ -200,12 +200,12 @@ void agents_controller( WORLD_TYPE *w )
 		// y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
 		
 		// // Slightly Rotate the agent
-		// h = a->outstate->body_angle;
-		// h += 1;
+		h = a->outstate->body_angle;
+		h += 1;
 
-		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		h = distributions_uniform( -179.0, 179.0) ;
+		x = 0; //x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		y = 0; //y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		//h = distributions_uniform( -179.0, 179.0) ;
 
 		for (i=0; i<4; i++)
 			printf("%f\t", class_weights[i]);

@@ -31,7 +31,7 @@ int r = 0;
 int b = 0;
 int g = 0;
 
-void agents_controller( WORLD_TYPE *w )
+void arch2( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;

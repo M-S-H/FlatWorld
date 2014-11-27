@@ -17,10 +17,12 @@
 
  // Architecture 7
 
-float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
+//float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
+//float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
+float classification[4] = {0, -0.5622008187649891, 0.7544873346344028, -0.3365673238615887};
 float lifetime[360];
 
-void agents_controller( WORLD_TYPE *w )
+void arch7( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;
@@ -57,17 +59,22 @@ void agents_controller( WORLD_TYPE *w )
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
-		float intensities[31];
+		float intensities[32];
 		int i;
+
+		float total_intensity = 0;
 
 		// Compute Intensities
 		for (i=0; i<31; i++) 
 		{
+			// Intensity Neuron
 			float intensity;
 			intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
+			total_intensity += intensity;
 			
 			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
-			
+		
+			// Classification Neuron	
 			float v = 0;
 			int j;
 			for (j=0; j<4; j++)
@@ -78,13 +85,25 @@ void agents_controller( WORLD_TYPE *w )
 			if (v > 0)
 				y = 1;
 
-			intensities[i] = (1*y) * (1*intensity);
+			// Gate Neuron
+			intensities[i+1] = (1*y) * (1*intensity);
 		}
+
+		// Do I see anything? Neuron
+		intensities[0] = 0;
+		if (total_intensity <= 0)
+			intensities[0] = 1;
+
+		/*
+		int j = 0;
+		for (j=0; j<31; j++)
+			printf("%d\t%f - %f, %f, %f\n", j+1, intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
+		*/
 
 		// Winner Take All
 		int max_intensity_index = 15;
 		float max_itensity = 0;
-		for (i=0; i<30; i++)
+		for (i=0; i<32; i++)
 		{
 			if (intensities[i] > max_itensity)
 			{
@@ -93,8 +112,11 @@ void agents_controller( WORLD_TYPE *w )
 			}
 		}
 
+
 		// Calculate Angle
-		float angles[31] = {-15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+		float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+		
+
 		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
 		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
 

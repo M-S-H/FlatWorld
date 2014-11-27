@@ -20,7 +20,7 @@
 float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 float lifetime[360];
 
-void agents_controller( WORLD_TYPE *w )
+void arch6( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;
