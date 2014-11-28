@@ -19,8 +19,12 @@
 
 //float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 //float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
-float classification[4] = {0, -0.5622008187649891, 0.7544873346344028, -0.3365673238615887};
+float classification[4] = {0, -5, 10, -5};
 float lifetime[360];
+int red = 0;
+int blue = 0;
+int green = 0;
+
 
 void arch7( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -160,7 +164,15 @@ void arch7( WORLD_TYPE *w )
 				v += classification[i] * inputs[i];
 
 			if (v > 0)
+			{
 				delta_energy = eat_colliding_object(w, a, 0);
+				if (delta_energy > 0)
+					green++;
+				else if (delta_energy == 0)
+					blue++;
+				else
+					red++;
+			}
 		}		
 
 		// move the agents body
@@ -207,15 +219,7 @@ void arch7( WORLD_TYPE *w )
 			avelifetime /= (float)maxnlifetimes ;
 			printf("\nAverage lifetime: %f\n",avelifetime);
 
-			// Write out data
-			FILE *fp;
-			fp = fopen("./Results/Arch4 AvgLifetime.csv", "w");
-			int i;
-			for(i=0; i<maxnlifetimes; i++)
-			{
-				fprintf(fp, "%d, %f\n", i, lifetime[i]);
-			}
-			fclose(fp);
+			printf("\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 
 			exit(0) ;
 		}
