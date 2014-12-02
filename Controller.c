@@ -22,11 +22,11 @@
 // #include "./Architectures/arch0.c"
 // #include "./Architectures/arch1.c"
 // #include "./Architectures/arch2.c"
-// #include "./Architectures/arch3.c"
+#include "./Architectures/arch3.c"
 // #include "./Architectures/arch4.c"
 // #include "./Architectures/arch5.c"
 // #include "./Architectures/arch6.c"
-#include "./Architectures/arch7.c"
+// #include "./Architectures/arch7.c"
 
 void agents_controller( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -34,9 +34,9 @@ void agents_controller( WORLD_TYPE *w )
 	// original(w);
 	// arch1(w);
 	// arch2(w);
-	// arch3(w);
+	arch3(w);
 	// arch4(w);
 	// arch5(w);
 	// arch6(w);
-	arch7(w);
+	// arch7(w);
 }

@@ -122,7 +122,7 @@ void arch3( WORLD_TYPE *w )
 			}
 			else if (delta_energy == 0.0)
 			{
-				desired_value = -1.0;
+				desired_value = 1.0;
 				//printf ("-- I ate a blue!\n");
 				blue += 1;
 			}
