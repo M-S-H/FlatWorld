@@ -15,7 +15,7 @@
  *
  */
 
- // Architecture 7
+ // Architecture 9
 
  /*
 
@@ -69,7 +69,8 @@ void arch9( WORLD_TYPE *w )
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
-		float intensities[32];
+		float intensities[31];
+		float green_intensities[32];
 		int i;
 
 		float total_intensity = 0;
@@ -118,29 +119,30 @@ void arch9( WORLD_TYPE *w )
 				y = 1;
 
 			// Gate Neuron
-			intensities[i+1] = (1*y) * (1*intensity);
+			green_intensities[i+1] = (1*y) * (1*intensity);
+			intensities[i] = intensity;
 		}
 
 		// Do I see anything? Neuron
-		intensities[0] = 0;
+		green_intensities[0] = 0;
 		if (total_intensity <= 0)
-			intensities[0] = 1;
+			green_intensities[0] = 1;
 
 		
 		int j = 0;
 		/*
 		for (j=0; j<31; j++)
-			printf("%d\t%f - %f, %f, %f\n", j+1, intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
+			printf("%d\t%f - %f, %f, %f\n", j+1, green_intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
 		*/
 
-		// Winner Take All
+		// Winner Take All For Green Intensities
 		int max_intensity_index = 15;
 		float max_itensity = 0;
 		for (i=0; i<32; i++)
 		{
-			if (intensities[i] > max_itensity)
+			if (green_intensities[i] > max_itensity)
 			{
-				max_itensity = intensities[i];
+				max_itensity = green_intensities[i];
 				max_intensity_index = i;
 			}
 		}
@@ -152,6 +154,19 @@ void arch9( WORLD_TYPE *w )
 
 		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
 		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
+
+
+		// Winner Take All For Green Intensities
+		max_intensity_index = 15;
+		max_itensity = 0;
+		for (i=0; i<31; i++)
+		{
+			if (intensities[i] > max_itensity)
+			{
+				max_itensity = intensities[i];
+				max_intensity_index = i;
+			}
+		}
 
 
 		// Collision Neuron
@@ -185,8 +200,6 @@ void arch9( WORLD_TYPE *w )
 			read_visual_sensor(w,a);
 			eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
-
-
 			int i;
 			float v = 0;
 			float inputs[4] = {1, eyevalues[max_intensity_index][0], eyevalues[max_intensity_index][1], eyevalues[max_intensity_index][2]};
@@ -194,15 +207,21 @@ void arch9( WORLD_TYPE *w )
 			for (i=0; i<4; i++)
 				v += classification[i] * inputs[i];
 
+
 			if (v > 0)
 			{
 				delta_energy = eat_colliding_object(w, a, 0);
 				if (delta_energy > 0)
 					green++;
-				else if (delta_energy == 0)
+				else if (delta_energy == 0) {
 					blue++;
-				else
+	
+				}
+				else 
+				{
 					red++;
+	
+				}
 			}
 		}		
 
@@ -211,14 +230,8 @@ void arch9( WORLD_TYPE *w )
 		move_body_agent( a ) ;
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		if (nlifetimes < 7)
-			for (i=0; i<15; i++)
-				basal_metabolism_agent(a) ;
-		else
-			basal_metabolism_agent(a) ;
-
 		//for (i=0; i<5; i++)
-			//basal_metabolism_agent(a) ;
+			basal_metabolism_agent(a) ;
 		simtime++ ;
 
 	} // end agent alive condition
