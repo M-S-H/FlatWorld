@@ -136,7 +136,7 @@ void arch9( WORLD_TYPE *w )
 		*/
 
 		// Winner Take All For Green Intensities
-		int max_intensity_index = 15;
+		int max_intensity_index = 0;
 		float max_itensity = 0;
 		for (i=0; i<32; i++)
 		{
@@ -228,6 +228,14 @@ void arch9( WORLD_TYPE *w )
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
+
+		/*
+		if (nlifetimes != 3)
+			for (i=0; i<25; i++)
+				basal_metabolism_agent(a);
+		else
+			 basal_metabolism_agent(a) ;
+		*/
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 		//for (i=0; i<5; i++)
