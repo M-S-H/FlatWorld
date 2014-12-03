@@ -25,7 +25,7 @@
 /* Global pointer to current Flatworld */
 WORLD_TYPE *Flatworld ;
 int simtime = 0 ;
-int nlifetimes = 0, maxnlifetimes = 720;
+int nlifetimes = 0, maxnlifetimes = 10;
 int runflag = 1;
 float avelifetime = 0.0;
 
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   ACOUSTIC_SHAPE_TYPE *sound ;
 	int nsoundreceptors, nsoundbands ;
   int t ;
-  float angle_locations0[31] = {-15.,-14.,-13.,-12.,-11.,-10.,-9.,-8.,-7.,-6.,-5.,-4.,-3.,-2.,-1.,0.,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15} ;
+  float angle_locations0[31] = {-30.,-28.,-26.,-24.,-22.,-20.,-18.,-16.,-14.,-12.,-10.,-8.,-6.,-4.,-2.,0.,2.,4.,6.,8.,10.,12.,14.,16.,18.,20.,22.,24.,26.,28.,30.} ;
   float directions0[31] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
   time_t now ;
   struct tm *date ;

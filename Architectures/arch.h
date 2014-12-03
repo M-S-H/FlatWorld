@@ -6,3 +6,5 @@ void arch4( WORLD_TYPE *w );
 void arch5( WORLD_TYPE *w );
 void arch6( WORLD_TYPE *w );
 void arch7( WORLD_TYPE *w );
+void arch8( WORLD_TYPE *w );
+void arch9( WORLD_TYPE *w );

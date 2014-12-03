@@ -17,6 +17,13 @@
 
  // Architecture 7
 
+ /*
+
+	We will use a winner take all network to perform contrast enhancement
+	on the eye value inputs.
+
+ */
+
 //float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
 float lifetime[360];
@@ -25,7 +32,7 @@ int blue = 0;
 int green = 0;
 
 
-void arch7( WORLD_TYPE *w )
+void arch8( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;
@@ -76,9 +83,31 @@ void arch7( WORLD_TYPE *w )
 			total_intensity += intensity;
 			
 			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
+		
+			
+			// Winner Takes all for contrast enhancement
+			int max_component_index = 0;
+			float max_component_value = 0;
+			int j;
+			for (j=1; j<4; j++)
+			{
+				if (max_component_value < inputs[j])
+				{
+					max_component_value = inputs[j];
+					max_component_index = j;
+				}
+			}
+
+			inputs[1] = 0;
+			inputs[2] = 0;
+			inputs[3] = 0;
+			inputs[max_component_index] = 1;
+
+			//for (j=0; j<31; j++)
+			//printf("%d\t%f,  %f,  %f,  %f\n", i+1, intensity, inputs[0], inputs[1], inputs[2]);
+			//printf("%d\t%f,  %f,  %f,  %f\n", i+1, intensity, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]);
  
 			// Classification Neuron
-			int j;
 			float v = 0;
 			for (j=0; j<4; j++)
 				v += classification[j] * inputs[j];
@@ -97,12 +126,13 @@ void arch7( WORLD_TYPE *w )
 		if (total_intensity <= 0)
 			intensities[0] = 1;
 
-		/*
+		
 		int j = 0;
+		/*
 		for (j=0; j<31; j++)
 			printf("%d\t%f - %f, %f, %f\n", j+1, intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
 		*/
-	
+
 		// Winner Take All
 		int max_intensity_index = 15;
 		float max_itensity = 0;
@@ -155,9 +185,11 @@ void arch7( WORLD_TYPE *w )
 			read_visual_sensor(w,a);
 			eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
+
+
 			int i;
 			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+			float inputs[4] = {1, eyevalues[max_intensity_index][0], eyevalues[max_intensity_index][1], eyevalues[max_intensity_index][2]};
 			
 			for (i=0; i<4; i++)
 				v += classification[i] * inputs[i];
@@ -200,12 +232,9 @@ void arch7( WORLD_TYPE *w )
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
 
-		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		
-		// Slightly Rotate the agent
-		h = a->outstate->body_angle;
-		h += 1;
+		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
+		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
+		h = distributions_uniform( -179.0, 179.0) ;
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
