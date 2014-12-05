@@ -1,33 +1,16 @@
+// Architecture 3
+
 /*
- *  Controller.c
- *  For the UNM Neural Networks class, this should be the only file you will need to modify.
- *  World and agent initialization code are located in the main().  An
- *  example of a non-neural controller is included here.
- *  Note that most all of the functions called here can be found in the 
- *  file FlatworldIICore.c
- *  
- *
- *  Created by Thomas Caudell on 9/15/09.
- *  Modified by Thomas Caudell on 9/30/2010
- *  Modified by Thomas Caudell on 9/13/2012
- *  Modified by Thomas Caudel on 9/10/14
- *  Copyright 2009 UNM. All rights reserved.
- *
- */
+	The agent will now classify the food objects it eats, but will still
+	eat everything it touches.
+*/
 
- // Architecture 3
+int lifetimes[ML];			// Collects simtime
+float classification_rms[ML];	// Collects classification rms error
+float rms = 0;
+int red=0, blue=0, green=0;	// Collects food eaten
 
-float energy[5000];
-int red = 0;
-int blue = 0;
-int green = 0;
-float class_errors = 0;
-float total_errors = 0;
-
-//float class_weights[4] = {0,0.5,0.5,0.5};
-float class_weights[4] = {0.5, 0.5, 0.5, 0.5};
-float se[720] = {0};
-float rms[720] = {0};
+float w_oclass[4] = {0.5, 0.5, 0.5, 0.5};	// Initial object classification weights
 
 void arch3( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -52,130 +35,75 @@ void arch3( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	//forwardspeed = 0.05 * nlifetimes; 
-	forwardspeed = 0.1;
+	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0;
-
-	// Randomize initial weightss
-	if (nlifetimes == 0)
-	{
-		int i;
-		for(i=0; i<4; i++)
-			class_weights[i] = (double)rand() / (double)RAND_MAX;
-	}
 	
-	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
-		 reset agent & world */
 	if( a->instate->metabolic_charge>0.0 )
 	{	
 		// Collision Neuron
+			collision_flag = read_soma_sensor(w, a);		 	
+			skinvalues = extract_soma_receptor_values_pointer( a );
+			nsomareceptors = get_number_of_soma_receptors( a );
 
-		collision_flag = read_soma_sensor(w, a);		 	
-		skinvalues = extract_soma_receptor_values_pointer( a );
-		nsomareceptors = get_number_of_soma_receptors( a );
+			float w_collision[8] = {1, 0, 0, 0, 0, 0, 0, 0};
 
-		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+			int i;
+			float v_collision = 0;
+			int y_collision = 0;
 
-		int i;
-		float v_col = 0;
-		int y_col = 0;
+			for (i=0; i<8; i++)
+				v_collision += skinvalues[i][0] * w_collision[i];
 
-		for (i=0; i<8; i++)
-		{
-			v_col += skinvalues[i][0] * weights[i];
-		}
-
-		if (v_col > 0.0)
-			y_col = 1;
-		else
-			y_col = 0;
-
-		// Eat Neuron
-		int v_eat = 0;
-		int weight = 1;
-		v_eat = y_col * weight;
+			if (v_collision > 0.0)
+				y_collision = 1;
 
 
-		float desired_value = 0;
 
-		if (v_eat > 0)
-		{
-			read_visual_sensor(w, a) ;
-			eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-			int mvs = intensity_winner_takes_all( a );
-
-			delta_energy = eat_colliding_object(w, a, 0);
-
-			if (delta_energy > 0.0)
+		// Classify and Eat the object
+			if (y_collision > 0)
 			{
-				desired_value = 1.0;
-				//printf ("-- I ate a green!\n");
-				green += 1;
-			}
-			else if (delta_energy < 0.0)
-			{
-				desired_value = -1.0;
-				//printf ("-- I ate a red!\n");
-				red += 1;
-			}
-			else if (delta_energy == 0.0)
-			{
-				desired_value = 1.0;
-				//printf ("-- I ate a blue!\n");
-				blue += 1;
+				// Read eye values before eating
+				read_visual_sensor(w,a);
+				eyevalues = extract_visual_receptor_values_pointer(a,0);
+
+				// Eat the object
+				delta_energy = eat_colliding_object(w,a,0);
+
+				float desired_value = 0;
+				if (delta_energy > 0.0)
+				{
+					desired_value = 1.0;
+					green++;
+				}
+				else if (delta_energy < 0.0)
+					red++;
+				else
+					blue++;
+
+				// Training the classification neuron
+				float v_classification = 0;
+				float x_classification[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+				for (i=0; i<4; i++)
+					v_classification += x_classification[i] * w_oclass[i];
+
+				float y_classification = v_classification;
+
+				float error = desired_value - y_classification;
+				rms += error*error;
+				for (i=0; i<4; i++)
+					w_oclass[i] += 0.1 * error * x_classification[i];
 			}
 
-			// Classification Neuron
-			
-			float v_class = 0;
-
-			float inputs[4] = {1, eyevalues[mvs][0], eyevalues[mvs][1], eyevalues[mvs][2]};
-
-			printf("\n\n");
-			for (i=0; i<4; i++)
-			{
-				printf("Input: %f\n", inputs[i]);
-				v_class += inputs[i] * class_weights[i];
-			}
-
-			printf("V: %f\n", v_class);
-
-			float y_class = -1.0;
-
-			if (v_class > 0.0)
-				y_class = 1.0;
-
-			printf("Y: %f\n", y_class);
-			printf("D: %f\n", desired_value);
-
-			if (y_class == 1 && desired_value != 1)
-				class_errors += 1;
-
-			float error = 0;
-			error = desired_value - y_class;
-
-			rms[nlifetimes] += error * error;
-
-			printf("Error: %f\n", error);
-			//class_errors += error * error;
-
-			for (i=0; i<4; i++)
-				class_weights[i] += 0.1 * error * inputs[i];
-		}		
-
-		energy[simtime] = a->instate->metabolic_charge;
-
-		// move the agents body
-		set_forward_speed_agent( a, forwardspeed ) ;
-		move_body_agent( a ) ;
+		// Move the Agent
+			set_forward_speed_agent( a, forwardspeed ) ;
+			move_body_agent( a ) ;
 
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		//for (i=0; i<5; i++)
 			basal_metabolism_agent(a) ;
-		simtime++ ;
+		
+		simtime++;
+		
 
 	} // end agent alive condition
 	else
@@ -183,6 +111,7 @@ void arch3( WORLD_TYPE *w )
 
 		//speed[nlifetimes] = forwardspeed;
 		//lifetimes[nlifetimes] = simtime;
+		printf("Classification Weights: %f, %f, %f, %f\n", w_oclass[0], w_oclass[1], w_oclass[2], w_oclass[3]);
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
@@ -196,40 +125,17 @@ void arch3( WORLD_TYPE *w )
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
 
-		// x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		// y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
 		
-		// // Slightly Rotate the agent
-		h = a->outstate->body_angle;
-		h += 1;
-
-		x = 0; //x = distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0; //y = distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
-		//h = distributions_uniform( -179.0, 179.0) ;
-
-		for (i=0; i<4; i++)
-			printf("%f\t", class_weights[i]);
-		printf("\n");
-
-		// if (red+blue+green != 0)
-		// 	class_errors /= (red+blue+green);
-
-		// class_errors = sqrt(class_errors);
-
-		if (red+blue+green != 0)
-			rms[nlifetimes] = sqrt(rms[nlifetimes] / (red+blue+green));
-		else
-			rms[nlifetimes] = 0;
-
-		//red = blue = green = 0;
-
-		se[nlifetimes] = class_errors;
-		total_errors += class_errors;
-		class_errors = 0;
-
-		//h = distributions_uniform( -179.0, 179.0) ;
+		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax );
+		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax );
+		h = distributions_uniform( -179.0, 179.0);
 
 		// Collect Data
+		lifetimes[nlifetimes] = simtime;
+		rms /= (red+blue+green);
+		rms = sqrt(rms);
+		classification_rms[nlifetimes] = rms;
+		rms = 0;
 		
 		//printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
 
@@ -241,32 +147,27 @@ void arch3( WORLD_TYPE *w )
 		nlifetimes++ ;
 		if( nlifetimes >= maxnlifetimes )
 		{
-			avelifetime /= (float)maxnlifetimes ;
-			printf("\nAverage lifetime: %f\n",avelifetime);
+			avelifetime /= (float)maxnlifetimes;
+			float std = 0;
+			int i;
+			for (i=0; i<maxnlifetimes; i++)
+				std += (lifetimes[i] - avelifetime) * (lifetimes[i] - avelifetime);
 
-			printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
-			printf("Error Rate: %f\n", total_errors/(red+green+blue));
+			std /= (float)maxnlifetimes;
+			std = sqrt(std);
+			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
+			printf("Classification Weights: %f, %f, %f, %f\n", w_oclass[0], w_oclass[1], w_oclass[2], w_oclass[3]);
 
 			// Write out data
-			
-			// Classification Errors
 			FILE *fp;
-			fp = fopen("./Results/Arch3 Classification Errors.csv", "w");
-			int i;
+			fp = fopen("./Results/Arch3 Lifetimes.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
-			{
-				fprintf(fp, "%d, %f\n", i, se[i]);
-			}
+				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
 			fclose(fp);
 
-
-			//FILE *fp;
-			fp = fopen("./Results/Arch3 RMS Errors.csv", "w");
-			for(i=0; i<maxnlifetimes; i++)
-			{
-				//if (rms[i] != 0)
-					fprintf(fp, "%d, %f\n", i, rms[i]);
-			}
+			fp = fopen("./Results/Arch3 RMS.csv", "w");
+			for (i=0; i<maxnlifetimes; i++)
+				fprintf(fp, "%d, %f\n", i, classification_rms[i]);
 			fclose(fp);
 
 			exit(0) ;

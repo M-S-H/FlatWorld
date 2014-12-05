@@ -20,12 +20,13 @@
 #define FALSE 0
 #define PI2 6.283185307179586
 #define PI 3.141592653589793
+#define ML 10
 
 
 /* Global pointer to current Flatworld */
 WORLD_TYPE *Flatworld ;
 int simtime = 0 ;
-int nlifetimes = 0, maxnlifetimes = 10;
+int nlifetimes = 0, maxnlifetimes = ML;
 int runflag = 1;
 float avelifetime = 0.0;
 

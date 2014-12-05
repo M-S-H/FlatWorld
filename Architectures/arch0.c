@@ -1,21 +1,8 @@
-/*
- *  Controller.c
- *  For the UNM Neural Networks class, this should be the only file you will need to modify.
- *  World and agent initialization code are located in the main().  An
- *  example of a non-neural controller is included here.
- *  Note that most all of the functions called here can be found in the 
- *  file FlatworldIICore.c
- *  
- *
- *  Created by Thomas Caudell on 9/15/09.
- *  Modified by Thomas Caudell on 9/30/2010
- *  Modified by Thomas Caudell on 9/13/2012
- *  Modified by Thomas Caudel on 9/10/14
- *  Copyright 2009 UNM. All rights reserved.
- *
- */
+// Architecture 0
 
- // Architecture 0
+/*
+	The agent does nothing.
+*/
 
 void arch0( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */

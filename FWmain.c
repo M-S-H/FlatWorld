@@ -22,6 +22,7 @@
 #define FALSE 0
 #define PI2 6.283185307179586
 #define PI 3.141592653589793
+#define ML 500
 
 /* Graphics window global variables */
 int wh = 600, ww = 800 ;
