@@ -15,24 +15,24 @@
  *
  */
 
- // Architecture 10
+ // Architecture 13
 
  /*
 
-	We will use a winner take all network to perform contrast enhancement
-	on the eye value inputs.
+	We will use a winner takes all system for each set of intensities
 
  */
 
 //float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
 float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
+//float classification[4] = {0.235924, -0.388834, 1.016886, -0.389143};
 float lifetime[360];
 int red = 0;
 int blue = 0;
 int green = 0;
 
 
-void arch10( WORLD_TYPE *w )
+void arch13( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
 	
 	AGENT_TYPE *a ;
@@ -70,6 +70,7 @@ void arch10( WORLD_TYPE *w )
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
 		float intensities[32];
+		float green_intensities[31];
 		int i;
 
 		float total_intensity = 0;
@@ -118,25 +119,64 @@ void arch10( WORLD_TYPE *w )
 				y = 1;
 
 			// Gate Neuron
-			intensities[i+1] = (1*y) * (1*intensity);
+			green_intensities[i] = (1*y) * (1*intensity);
+			intensities[i+1] = intensity;
 		}
 
 		// Do I see anything? Neuron
 		intensities[0] = 0;
-		if (total_intensity <= 0)
-			intensities[0] = 1;
-
-		
+		int max_index = 0;
+		float max_value = 0;
 		int j = 0;
+
+		for (j=0; j<32; j++)
+			if (max_value < 0.00001 * intensities[j])
+			{
+				max_index = j;
+				max_value = 0.00001 * intensities[j];
+			}
+
+		for (j=32; j<63; j++)
+			if (max_value < green_intensities[j-32])
+			{
+				max_index = j;
+				max_value = green_intensities[j-32];
+			}
+
+
+		// Giant winner take all
+		float angles[63] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
 		/*
 		for (j=0; j<31; j++)
-			printf("%d\t%f - %f, %f, %f\n", j+1, intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
+			printf("%d\t%f - %f, %f, %f\n", j+1, green_intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
 		*/
 
-		// Winner Take All
-		int max_intensity_index = 15;
+		
+		// Winner Take All For Green Intensities
+		int max_intensity_index = 0;
 		float max_itensity = 0;
 		for (i=0; i<32; i++)
+		{
+			if (green_intensities[i] > max_itensity)
+			{
+				max_itensity = green_intensities[i];
+				max_intensity_index = i;
+			}
+		}
+
+		// Calculate Angle
+		//float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+		
+
+		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
+		set_agent_body_angle(a, bodyth + angles[max_index]) ;
+
+
+		// Winner Take All For Green Intensities
+		max_intensity_index = 15;
+		max_itensity = 0;
+		for (i=0; i<31; i++)
 		{
 			if (intensities[i] > max_itensity)
 			{
@@ -144,14 +184,6 @@ void arch10( WORLD_TYPE *w )
 				max_intensity_index = i;
 			}
 		}
-
-
-		// Calculate Angle
-		float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-		
-
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
 
 
 		// Collision Neuron
@@ -187,26 +219,62 @@ void arch10( WORLD_TYPE *w )
 
 			int i;
 			float v = 0;
-			float inputs[4] = {1, eyevalues[max_intensity_index-1][0], eyevalues[max_intensity_index-1][1], eyevalues[max_intensity_index-1][2]};
+			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
 			
 			for (i=0; i<4; i++)
 				v += classification[i] * inputs[i];
+
 
 			if (v > 0)
 			{
 				delta_energy = eat_colliding_object(w, a, 0);
 				if (delta_energy > 0)
 					green++;
-				else if (delta_energy == 0)
+				else if (delta_energy == 0) {
 					blue++;
-				else
+	
+				}
+				else 
+				{
 					red++;
+	
+				}
 			}
-		}		
+		}
+
+
+		// Energy Level Neuron
+		int energy = 0;
+		if (a->instate->metabolic_charge > 0.9)
+			energy = 1;
+
+		// Max Intensity
+		int mi = 0;
+		if (green_intensities[15] > 0.9)
+			mi = 1;
+
+		// Stop Gate Neuron
+		int v_stop = energy + mi;
+		int y_stop = 1;
+		if (v_stop > 1)
+			y_stop = 0;
+
+		forwardspeed = y_stop * forwardspeed;
+
+		//printf("E: %f, MI: %f, FS: %f\n", a->instate->metabolic_charge, green_intensities[15], forwardspeed);
+
 
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
+
+		/*
+		if (nlifetimes != 3)
+			for (i=0; i<25; i++)
+				basal_metabolism_agent(a);
+		else
+			 basal_metabolism_agent(a) ;
+		*/
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 		//for (i=0; i<5; i++)

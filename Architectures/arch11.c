@@ -15,11 +15,12 @@
  *
  */
 
- // Architecture 10
+ // Architecture 11
 
  /*
 
-	We will use a winner takes all system for each set of intensities
+	We will use a winner take all network to perform contrast enhancement
+	on the eye value inputs.
 
  */
 
@@ -68,8 +69,8 @@ void arch11( WORLD_TYPE *w )
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
-		float intensities[32];
-		float green_intensities[31];
+		float intensities[31];
+		float green_intensities[32];
 		int i;
 
 		float total_intensity = 0;
@@ -118,40 +119,22 @@ void arch11( WORLD_TYPE *w )
 				y = 1;
 
 			// Gate Neuron
-			green_intensities[i] = (1*y) * (1*intensity);
-			intensities[i+1] = intensity;
+			green_intensities[i+1] = (1*y) * (1*intensity);
+			intensities[i] = intensity;
 		}
 
 		// Do I see anything? Neuron
-		intensities[0] = 0;
-		int max_index = 0;
-		float max_value = 0;
+		green_intensities[0] = 0;
+		if (total_intensity <= 0)
+			green_intensities[0] = 1;
+
+		
 		int j = 0;
-
-		for (j=0; j<32; j++)
-			if (max_value < 0.00001 * intensities[j])
-			{
-				max_index = j;
-				max_value = 0.00001 * intensities[j];
-			}
-
-		for (j=32; j<63; j++)
-			if (max_value < green_intensities[j-32])
-			{
-				max_index = j;
-				max_value = green_intensities[j-32];
-			}
-
-
-		// Giant winner take all
-		float angles[63] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
 		/*
 		for (j=0; j<31; j++)
 			printf("%d\t%f - %f, %f, %f\n", j+1, green_intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
 		*/
 
-		
 		// Winner Take All For Green Intensities
 		int max_intensity_index = 0;
 		float max_itensity = 0;
@@ -164,12 +147,13 @@ void arch11( WORLD_TYPE *w )
 			}
 		}
 
+
 		// Calculate Angle
-		//float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+		float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 		
 
 		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_index]) ;
+		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
 
 
 		// Winner Take All For Green Intensities
@@ -218,7 +202,7 @@ void arch11( WORLD_TYPE *w )
 
 			int i;
 			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+			float inputs[4] = {1, eyevalues[max_intensity_index][0], eyevalues[max_intensity_index][1], eyevalues[max_intensity_index][2]};
 			
 			for (i=0; i<4; i++)
 				v += classification[i] * inputs[i];
@@ -239,29 +223,7 @@ void arch11( WORLD_TYPE *w )
 	
 				}
 			}
-		}
-
-
-		// Energy Level Neuron
-		int energy = 0;
-		if (a->instate->metabolic_charge > 0.9)
-			energy = 1;
-
-		// Max Intensity
-		int mi = 0;
-		if (green_intensities[15] > 0.9)
-			mi = 1;
-
-		// Stop Gate Neuron
-		int v_stop = energy + mi;
-		int y_stop = 1;
-		if (v_stop > 1)
-			y_stop = 0;
-
-		forwardspeed = y_stop * forwardspeed;
-
-		//printf("E: %f, MI: %f, FS: %f\n", a->instate->metabolic_charge, green_intensities[15], forwardspeed);
-
+		}		
 
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;

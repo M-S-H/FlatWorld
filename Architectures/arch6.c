@@ -1,24 +1,15 @@
+// Architecture 6
+
 /*
- *  Controller.c
- *  For the UNM Neural Networks class, this should be the only file you will need to modify.
- *  World and agent initialization code are located in the main().  An
- *  example of a non-neural controller is included here.
- *  Note that most all of the functions called here can be found in the 
- *  file FlatworldIICore.c
- *  
- *
- *  Created by Thomas Caudell on 9/15/09.
- *  Modified by Thomas Caudell on 9/30/2010
- *  Modified by Thomas Caudell on 9/13/2012
- *  Modified by Thomas Caudel on 9/10/14
- *  Copyright 2009 UNM. All rights reserved.
- *
- */
+	The agent continues to move in a single direction at a constant speed
+	but will now classify the objects it contacts and will only eat the 
+	objects it associates with a reward.
+*/
 
- // Architecture 6
+int lifetimes[ML];			// Collects simtime
+int red=0, blue=0, green=0;	// Collects food eaten
 
-float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
-float lifetime[360];
+float w_oclass[4] = {0.000516, -0.201718, 1.255427, -0.201662};
 
 void arch6( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -46,97 +37,89 @@ void arch6( WORLD_TYPE *w )
 	//forwardspeed = 0.05 * nlifetimes; 
 	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
-
 	if( a->instate->metabolic_charge>0.0 )
 	{	
-		// Movement
-		read_visual_sensor(w,a);
-		eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-		float intensities[31];
-		int i;
-
-		// Compute Intensities
-		for (i=0; i<30; i++) 
-			intensities[i] = 0*eyevalues[i][0] + 1*eyevalues[i][1] + 0*eyevalues[i][2];
-
-		// Winner Take All
-		int max_intensity_index =0;
-		float max_itensity = 0;
-		for (i=0; i<30; i++)
-		{
-			if (intensities[i] > max_itensity)
-			{
-				max_itensity = intensities[i];
-				max_intensity_index = i;
-			}
-		}
-
-		// Calculate Angle
-		float angles[31] = {-15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
-
-
 		// Collision Neuron
-		collision_flag = read_soma_sensor(w, a);		 	
-		skinvalues = extract_soma_receptor_values_pointer( a );
-		nsomareceptors = get_number_of_soma_receptors( a );
+			collision_flag = read_soma_sensor(w, a);		 	
+			skinvalues = extract_soma_receptor_values_pointer( a );
+			nsomareceptors = get_number_of_soma_receptors( a );
 
-		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
-		float v_col = 0;
-		int y_col = 0;
-
-		for (i=0; i<8; i++)
-		{
-			v_col += skinvalues[i][0] * weights[i];
-		}
-
-		if (v_col > 0.0)
-			y_col = 1;
-		else
-			y_col = 0;
-
-		// Eat Neuron
-		int v_eat = 0;
-		int weight = 1;
-		v_eat = y_col * weight;
-
-		float desired_value = 0;
-
-		if (v_eat > 0)
-		{
-			read_visual_sensor(w,a);
-			eyevalues = extract_visual_receptor_values_pointer(a, 0);
+			float w_collision[8] = {1, 0, 0, 0, 0, 0, 0, 0};
 
 			int i;
-			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
-			
-			for (i=0; i<4; i++)
-				v += classification[i] * inputs[i];
+			float v_collision = 0;
+			int y_collision = 0;
 
-			if (v > 0)
-				delta_energy = eat_colliding_object(w, a, 0);
-		}		
+			for (i=0; i<8; i++)
+				v_collision += skinvalues[i][0] * w_collision[i];
+
+			if (v_collision > 0.0)
+				y_collision = 1;
+
+
+		// Classify and Eat the object
+			if (y_collision > 0)
+			{
+				// Read eye values before eating
+				read_visual_sensor(w,a);
+				eyevalues = extract_visual_receptor_values_pointer(a,0);
+				
+				// Intensity Neuron / Winner Takes All
+					int brightest_value = 0;
+					int brightest_index = 0;
+					for (i=0; i<31; i++)
+					{
+						int v_intensity = eyevalues[i][0] + eyevalues[i][1] + eyevalues[i][2];
+						if (v_intensity > brightest_value)
+						{
+							brightest_value = v_intensity;
+							brightest_index = i;
+						}
+					}
+
+				// Classification Neuron
+					int j;
+					float v_classification = 0, y_classification = 0;
+					float x_classification[4] = {1, eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2]};
+					for (j=0; j<4; j++)
+						v_classification += w_oclass[j] * x_classification[j];
+
+					// Eat if classified as a reward
+					if (v_classification > 0)
+						y_classification = 1;
+
+					printf("%f, %f, %f, %f, %f\n", eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2], v_classification, y_classification);
+
+
+				// Eat Neuron
+					if (y_classification > 0)
+					{
+						float delta_energy = eat_colliding_object(w,a,0);
+						if (delta_energy > 0)
+							green++;
+						else if (delta_energy < 0)
+							red++;
+						else
+							blue++;
+					}
+			}	
 
 		// move the agents body
-		set_forward_speed_agent( a, forwardspeed ) ;
-		move_body_agent( a ) ;
+			set_forward_speed_agent(a, forwardspeed) ;
+			move_body_agent(a) ;
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		//for (i=0; i<5; i++)
 			basal_metabolism_agent(a) ;
+		
 		simtime++ ;
 
 	} // end agent alive condition
 	else
 	{		
-		lifetime[nlifetimes] = simtime;
+		lifetimes[nlifetimes] = simtime;
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
@@ -150,12 +133,18 @@ void arch6( WORLD_TYPE *w )
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
 
-		x = 0;	//distributions_uniform( Flatworld->xmin, Flatworld->xmax ) ; /* pick random starting position and heading */
-		y = 0;	//distributions_uniform( Flatworld->ymin, Flatworld->ymax ) ;
 		
-		// Slightly Rotate the agent
+		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax );
+		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax );
+		h = distributions_uniform( -179.0, 179.0);
+		
+
+		
+		x = 0;
+		y = 0;
 		h = a->outstate->body_angle;
-		h += 1;
+		h += 5;
+		
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
@@ -165,17 +154,24 @@ void arch6( WORLD_TYPE *w )
 		nlifetimes++ ;
 		if( nlifetimes >= maxnlifetimes )
 		{
-			avelifetime /= (float)maxnlifetimes ;
-			printf("\nAverage lifetime: %f\n",avelifetime);
+			avelifetime /= (float)maxnlifetimes;
+			float std = 0;
+			int i;
+			for (i=0; i<maxnlifetimes; i++)
+				std += (lifetimes[i] - avelifetime) * (lifetimes[i] - avelifetime);
+
+			std /= (float)maxnlifetimes;
+			std = sqrt(std);
+			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
+			printf("Classification Weights: %f, %f, %f, %f\n", w_oclass[0], w_oclass[1], w_oclass[2], w_oclass[3]);
+
+			printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 
 			// Write out data
 			FILE *fp;
-			fp = fopen("./Results/Arch4 AvgLifetime.csv", "w");
-			int i;
+			fp = fopen("./Results/arch4 Lifetimes.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
-			{
-				fprintf(fp, "%d, %f\n", i, lifetime[i]);
-			}
+				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
 			fclose(fp);
 
 			exit(0) ;
@@ -184,5 +180,7 @@ void arch6( WORLD_TYPE *w )
 		simtime = 0;
 		
 		
-	} /* end agent dead condition */	
+	} /* end agent dead condition */
+	
+	
 }

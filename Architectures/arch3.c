@@ -124,11 +124,19 @@ void arch3( WORLD_TYPE *w )
 		restore_objects_to_world( Flatworld ) ;  /* restore all of the objects back into the world */
 		reset_agent_charge( a ) ;               /* recharge the agent's battery to full */
 		a->instate->itemp[0] = 0 ;              /* zero the number of object's eaten accumulator */
-
+		
 		
 		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax );
 		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax );
 		h = distributions_uniform( -179.0, 179.0);
+		
+
+		/*
+		x = 0;
+		y = 0;
+		h = a->outstate->body_angle;
+		h += 1;
+		*/
 
 		// Collect Data
 		lifetimes[nlifetimes] = simtime;
@@ -137,7 +145,6 @@ void arch3( WORLD_TYPE *w )
 		classification_rms[nlifetimes] = rms;
 		rms = 0;
 		
-		//printf("Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
@@ -157,6 +164,8 @@ void arch3( WORLD_TYPE *w )
 			std = sqrt(std);
 			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
 			printf("Classification Weights: %f, %f, %f, %f\n", w_oclass[0], w_oclass[1], w_oclass[2], w_oclass[3]);
+
+			printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 
 			// Write out data
 			FILE *fp;

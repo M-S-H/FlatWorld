@@ -116,9 +116,9 @@ void arch2( WORLD_TYPE *w )
 			std = sqrt(std);
 			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
 
-			printf("Total Food Eaten:\nRed: %d\tBlue: %d\tGreen: %d\n", red, blue, green);
+			printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 			
-			// Liftimes
+			// Lifetimes
 			FILE *fp;
 			fp = fopen("./Results/Arch2 Lifetimes.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
