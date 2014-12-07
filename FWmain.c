@@ -239,7 +239,7 @@ int main(int argc, char** argv)
 	GEOMETRIC_SHAPE_TYPE *agentshape  ;
   ACOUSTIC_SHAPE_TYPE *sound ;
 	int nsoundreceptors, nsoundbands ;
-  float angle_locations0[31] = {-30.,-28.,-26.,-24.,-22.,-20.,-18.,-16.,-14.,-12.,-10.,-8.,-6.,-4.,-2.,0.,2.,4.,6.,8.,10.,12.,14.,16.,18.,20.,22.,24.,26.,28.,30} ;
+  float angle_locations0[31] = {-30.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,30} ;
   float directions0[31] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
   time_t now ;
   struct tm *date ;
@@ -264,7 +264,7 @@ int main(int argc, char** argv)
 	
   /* Creat and initialize the Agent */
   printf("main- making and atrributing agent.\n") ;
-  agent = make_agent( 1, 0.0, 0.0, 0.0, 0.5, 1.0 ) ; 
+  agent = make_agent( 1, -91.715912, -69.336975, 95.609253, 0.5, 1.0 ) ; 
 	agentshape = read_geometric_shape_file( "geoshapeAgent.dat", 0 ) ;
   sound = read_acoustic_shape_file( "soundshapeAgent.dat" ) ;  
   nsoundreceptors = sound->nfrequencies ; 
