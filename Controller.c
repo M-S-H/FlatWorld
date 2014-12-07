@@ -30,8 +30,8 @@
 // #include "./Architectures/arch10.c"
 // #include "./Architectures/arch11.c"
 // #include "./Architectures/arch12.c"
-// #include "./Architectures/arch13.c"
-#include "./Architectures/arch14.c"
+#include "./Architectures/arch13.c"
+// #include "./Architectures/arch14.c"
 
 void agents_controller( WORLD_TYPE *w )
 {	
@@ -49,6 +49,6 @@ void agents_controller( WORLD_TYPE *w )
 	// arch10(w);
 	// arch11(w);
 	// arch12(w);
-	// arch13(w);
-	arch14(w);
+	arch13(w);
+	// arch14(w);
 }

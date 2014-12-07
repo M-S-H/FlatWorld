@@ -264,7 +264,7 @@ int main(int argc, char** argv)
 	
   /* Creat and initialize the Agent */
   printf("main- making and atrributing agent.\n") ;
-  agent = make_agent( 1, -91.715912, -69.336975, 95.609253, 0.5, 1.0 ) ; 
+  agent = make_agent( 1, 0, 0, 0, 0.5, 1.0 ) ; 
 	agentshape = read_geometric_shape_file( "geoshapeAgent.dat", 0 ) ;
   sound = read_acoustic_shape_file( "soundshapeAgent.dat" ) ;  
   nsoundreceptors = sound->nfrequencies ; 
