@@ -20,7 +20,7 @@
 #define FALSE 0
 #define PI2 6.283185307179586
 #define PI 3.141592653589793
-#define ML 20
+#define ML 10
 
 
 /* Global pointer to current Flatworld */
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   ACOUSTIC_SHAPE_TYPE *sound ;
 	int nsoundreceptors, nsoundbands ;
   int t ;
-  float angle_locations0[31] = {-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45} ;
+  float angle_locations0[31] = {-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
   float directions0[31] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
   time_t now ;
   struct tm *date ;

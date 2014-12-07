@@ -6,10 +6,10 @@
 	objects it associates with a reward.
 */
 
-int lifetimes[ML];			// Collects simtime
-int red=0, blue=0, green=0;	// Collects food eaten
+int lifetimes[ML];				// Collects simtime
+int red=0, blue=0, green=0;		// Collects food eaten
 
-float w_oclass[4] = {0.235924, -0.388834, 1.016886, -0.389143};
+float w_oclass[4] = {-0.515841, -0.787842, 2.022734, -0.788697};
 
 void arch4( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -124,14 +124,7 @@ void arch4( WORLD_TYPE *w )
 		x = distributions_uniform( Flatworld->xmin, Flatworld->xmax );
 		y = distributions_uniform( Flatworld->ymin, Flatworld->ymax );
 		h = distributions_uniform( -179.0, 179.0);
-		
 
-		/*
-		x = 0;
-		y = 0;
-		h = a->outstate->body_angle;
-		h += 5;
-		*/
 
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */

@@ -5,10 +5,10 @@
 	eat everything it touches.
 */
 
-int lifetimes[ML];			// Collects simtime
+int lifetimes[ML];				// Collects simtime
 float classification_rms[ML];	// Collects classification rms error
 float rms = 0;
-int red=0, blue=0, green=0;	// Collects food eaten
+int red=0, blue=0, green=0;		// Collects food eaten
 
 float w_oclass[4] = {0.5, 0.5, 0.5, 0.5};	// Initial object classification weights
 
@@ -69,7 +69,7 @@ void arch3( WORLD_TYPE *w )
 				// Eat the object
 				delta_energy = eat_colliding_object(w,a,0);
 
-				float desired_value = 0;
+				float desired_value = -1;
 				if (delta_energy > 0.0)
 				{
 					desired_value = 1.0;

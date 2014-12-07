@@ -1,15 +1,15 @@
 // Architecture 6
 
 /*
-	The agent continues to move in a single direction at a constant speed
-	but will now classify the objects it contacts and will only eat the 
-	objects it associates with a reward.
+	This is an update to architecture 4, using the new weights obtained
+	from architecture 5 as well as the winner takes all network to only
+	eat according to the brightest object it sees.
 */
 
 int lifetimes[ML];			// Collects simtime
 int red=0, blue=0, green=0;	// Collects food eaten
 
-float w_oclass[4] = {0.000516, -0.201718, 1.255427, -0.201662};
+float w_oclass[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
 
 void arch6( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -34,7 +34,6 @@ void arch6( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	//forwardspeed = 0.05 * nlifetimes; 
 	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
 	
@@ -91,7 +90,7 @@ void arch6( WORLD_TYPE *w )
 					if (v_classification > 0)
 						y_classification = 1;
 
-					printf("%f, %f, %f, %f, %f\n", eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2], v_classification, y_classification);
+					//printf("%f, %f, %f, %f, %f\n", eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2], v_classification, y_classification);
 
 
 				// Eat Neuron
@@ -139,13 +138,6 @@ void arch6( WORLD_TYPE *w )
 		h = distributions_uniform( -179.0, 179.0);
 		
 
-		
-		x = 0;
-		y = 0;
-		h = a->outstate->body_angle;
-		h += 5;
-		
-
 		printf("\nagent_controller- new coordinates after restoration:  x: %f y: %f h: %f\n",x,y,h) ;
 		set_agent_body_position( a, x, y, h ) ;    /* set new position and heading of agent */
 		/* Accumulate lifetime statistices */
@@ -163,13 +155,12 @@ void arch6( WORLD_TYPE *w )
 			std /= (float)maxnlifetimes;
 			std = sqrt(std);
 			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
-			printf("Classification Weights: %f, %f, %f, %f\n", w_oclass[0], w_oclass[1], w_oclass[2], w_oclass[3]);
 
 			printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 
 			// Write out data
 			FILE *fp;
-			fp = fopen("./Results/arch4 Lifetimes.csv", "w");
+			fp = fopen("./Results/arch6 Lifetimes.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
 				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
 			fclose(fp);
