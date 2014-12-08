@@ -1,34 +1,14 @@
+// Architecture 12
+
 /*
- *  Controller.c
- *  For the UNM Neural Networks class, this should be the only file you will need to modify.
- *  World and agent initialization code are located in the main().  An
- *  example of a non-neural controller is included here.
- *  Note that most all of the functions called here can be found in the 
- *  file FlatworldIICore.c
- *  
- *
- *  Created by Thomas Caudell on 9/15/09.
- *  Modified by Thomas Caudell on 9/30/2010
- *  Modified by Thomas Caudell on 9/13/2012
- *  Modified by Thomas Caudel on 9/10/14
- *  Copyright 2009 UNM. All rights reserved.
- *
- */
+	In this architecture, the agent will stop before a green object if it is
+	close enough and its energy level is above 0.9;
+*/
 
- // Architecture 12
-
- /*
-
-	We will use a winner takes all system for each set of intensities
-
- */
-
-//float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
-float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
-float lifetime[360];
-int red = 0;
-int blue = 0;
-int green = 0;
+float classification[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
+float w_oclass[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
+int lifetimes[ML];			// Collects simtime
+int red=0, blue=0, green=0;	// Collects food eaten
 
 
 void arch12( WORLD_TYPE *w )
@@ -54,16 +34,168 @@ void arch12( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	//forwardspeed = 0.05 * nlifetimes; 
 	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
 
 	if( a->instate->metabolic_charge>0.0 )
 	{	
+		read_visual_sensor(w,a);
+		eyevalues = extract_visual_receptor_values_pointer(a, 0);
+
+		int max_green_index = 0, max_all_index = 0;
+		float max_green = 0, max_all = 0;
+
+		// Eye Computation
+		float green_intensities[31];
+		float intensities[31];
+		int i;
+		for (i=0; i<31; i++)
+		{
+			// Intensity Neuron
+				float intensity;
+				intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
+				intensities[i] = intensity;
+
+			// Contrast Enhancement Neuron
+				float inputs[4] = {1, 0, 0, 0};
+				int j;
+				int max_rgb_index = 1;
+				float max_rgb_value = 0;
+				for (j=0; j<3; j++)
+					if (eyevalues[i][j] > max_rgb_value)
+					{
+						max_rgb_value = eyevalues[i][j];
+						max_rgb_index = j+1;
+					}
+
+				inputs[max_rgb_index] = 1;
+
+
+			// Eye Classification Neurons
+				float v_eyeclass = 0;
+				for (j=0; j<4; j++)
+					v_eyeclass += w_oclass[j] * inputs[j];
+
+				int y_eyeclass = 0;
+				if (v_eyeclass > 0)
+					y_eyeclass = 1;
+
+			// Gate the intensities
+				green_intensities[i] = (1*y_eyeclass) * (1*intensity);
+
+
+			// All Winner Takes All
+				float w_nongreen = 0.00001;
+				if (max_all < green_intensities[i])
+				{
+					max_all = green_intensities[i];
+					max_all_index = i+1;
+				}
+				if (max_all < w_nongreen*intensities[i])
+				{
+					max_all = w_nongreen*intensities[i];
+					max_all_index = i+32;
+				}
+		}
+		
+
+		// Direction Neuron
+			float angles[63] = {60,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
+			read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
+			set_agent_body_angle(a, bodyth + angles[max_all_index]);
+
+
+		// Collision Neuron
+			collision_flag = read_soma_sensor(w, a);		 	
+			skinvalues = extract_soma_receptor_values_pointer( a );
+			nsomareceptors = get_number_of_soma_receptors( a );
+
+			float w_collision[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+
+			float v_collision = 0;
+			int y_collision = 0;
+
+			for (i=0; i<8; i++)
+				v_collision += skinvalues[i][0] * w_collision[i];
+
+			if (v_collision > 0.0)
+				y_collision = 1;
+
+
+		// Classify and Eat the object
+			if (y_collision > 0)
+			{
+				// Read eye values before eating
+				read_visual_sensor(w,a);
+				eyevalues = extract_visual_receptor_values_pointer(a,0);
+				
+				// Intensity Neuron / Winner Takes All
+					int brightest_value = 0;
+					int brightest_index = 0;
+					for (i=0; i<31; i++)
+					{
+						if (intensities[i] > brightest_value)
+						{
+							brightest_value = intensities[i];
+							brightest_index = i;
+						}
+					}
+
+				// Classification Neuron
+					int j;
+					float v_classification = 0, y_classification = 0;
+					float x_classification[4] = {1, eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2]};
+					for (j=0; j<4; j++)
+						v_classification += w_oclass[j] * x_classification[j];
+
+					// Eat if classified as a reward
+					if (v_classification > 0)
+						y_classification = 1;
+
+				// Eat Neuron
+					if (y_classification > 0)
+					{
+						float delta_energy = eat_colliding_object(w,a,0);
+						if (delta_energy > 0)
+							green++;
+						else if (delta_energy < 0)
+							red++;
+						else
+							blue++;
+					}
+			}
+
+		// Energy Level Neuron
+			int energy = 0;
+			if (a->instate->metabolic_charge > 0.9)
+				energy = 1;
+
+		// Max Intensity
+			int mi = 0;
+			if (green_intensities[15] > 0.9)
+				mi = 1;
+
+		// Stop Movement Neuron
+			int v_stop = energy + mi;
+			int y_stop = 1;
+			if (v_stop > 1)
+				y_stop = 0;
+
+			forwardspeed = y_stop * forwardspeed;
+
+		// move the agents body
+			set_forward_speed_agent( a, forwardspeed ) ;
+			move_body_agent( a ) ;
+
+		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
+			basal_metabolism_agent(a);
+
+
+
+		/*
 		// Movement
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
@@ -144,12 +276,7 @@ void arch12( WORLD_TYPE *w )
 
 
 		// Giant winner take all
-		float angles[63] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-		/*
-		for (j=0; j<31; j++)
-			printf("%d\t%f - %f, %f, %f\n", j+1, green_intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
-		*/
+		float angles[63] = {30, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
 
 		
 		// Winner Take All For Green Intensities
@@ -239,29 +366,46 @@ void arch12( WORLD_TYPE *w )
 	
 				}
 			}
-		}		
+		}
+
+
+		// Energy Level Neuron
+		int energy = 0;
+		if (a->instate->metabolic_charge > 0.9)
+			energy = 1;
+
+		// Max Intensity
+		int mi = 0;
+		if (green_intensities[15] > 0.9)
+			mi = 1;
+
+		// Stop Gate Neuron
+		int v_stop = energy + mi;
+		int y_stop = 1;
+		if (v_stop > 1)
+			y_stop = 0;
+
+		forwardspeed = y_stop * forwardspeed;
+
+		//printf("E: %f, MI: %f, FS: %f\n", a->instate->metabolic_charge, green_intensities[15], forwardspeed);
+
 
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
 
-		/*
-		if (nlifetimes != 3)
-			for (i=0; i<25; i++)
-				basal_metabolism_agent(a);
-		else
-			 basal_metabolism_agent(a) ;
-		*/
-
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 		//for (i=0; i<5; i++)
 			basal_metabolism_agent(a) ;
+
+		*/
+			
 		simtime++ ;
 
 	} // end agent alive condition
 	else
 	{		
-		lifetime[nlifetimes] = simtime;
+		lifetimes[nlifetimes] = simtime;
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
@@ -287,10 +431,24 @@ void arch12( WORLD_TYPE *w )
 		nlifetimes++ ;
 		if( nlifetimes >= maxnlifetimes )
 		{
-			avelifetime /= (float)maxnlifetimes ;
-			printf("\nAverage lifetime: %f\n",avelifetime);
+			avelifetime /= (float)maxnlifetimes;
+			float std = 0;
+			int i;
+			for (i=0; i<maxnlifetimes; i++)
+				std += (lifetimes[i] - avelifetime) * (lifetimes[i] - avelifetime);
 
-			printf("\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
+			std /= (float)maxnlifetimes;
+			std = sqrt(std);
+			printf("\nAverage lifetime: %f\tStandard Deviation: %f\n",avelifetime, std);
+
+			printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
+
+			// Write out data
+			FILE *fp;
+			fp = fopen("./Results/Arch12 Lifetimes.csv", "w");
+			for(i=0; i<maxnlifetimes; i++)
+				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
+			fclose(fp);
 
 			exit(0) ;
 		}

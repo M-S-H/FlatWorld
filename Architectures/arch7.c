@@ -139,9 +139,6 @@ void arch7( WORLD_TYPE *w )
 					if (v_classification > 0)
 						y_classification = 1;
 
-					//printf("%f, %f, %f, %f, %f\n", eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2], v_classification, y_classification);
-
-
 				// Eat Neuron
 					if (y_classification > 0)
 					{

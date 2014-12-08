@@ -19,12 +19,12 @@
 
  /*
 
-	We will use a winner takes all system for each set of intensities
+	Ears
 
  */
 
 //float classification[4] = {0.266744, -1.744289, 0.950779, 0.948588};
-float classification[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
+float classification[4] = {-0.024704, -0.370985, 0.497871, -0.222094};
 //float classification[4] = {0.235924, -0.388834, 1.016886, -0.389143};
 float lifetime[360];
 int red = 0;
@@ -65,6 +65,11 @@ void arch13( WORLD_TYPE *w )
 
 	if( a->instate->metabolic_charge>0.0 )
 	{	
+		//printf("freq: %d ear0mag: %f ear1mag: %f\n",nacousticfrequencies,ear0mag,ear1mag) ;
+
+		//read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
+		//set_agent_body_angle(a, bodyth + 0.5) ;
+
 		// Movement
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
@@ -129,6 +134,32 @@ void arch13( WORLD_TYPE *w )
 		float max_value = 0;
 		int j = 0;
 
+		read_acoustic_sensor( w, a) ;
+		ear0values = extract_sound_receptor_values_pointer( a, 0 ) ;
+		ear1values = extract_sound_receptor_values_pointer( a, 1 ) ;
+		nacousticfrequencies = get_number_of_acoustic_receptors( a );
+		float max_freq_value0 = 0;
+		int max_freq0 = 0;
+		float max_freq_value1 = 0;
+		int max_freq1 = 0;
+
+		for( i=0 ; i<nacousticfrequencies ; i++ )
+		{
+			if (ear0values[i][0] > max_freq_value0)
+			{
+				max_freq_value0 = ear0values[i][0];
+				max_freq0 = i;
+			}
+			if (ear1values[i][0] > max_freq_value1)
+			{
+				max_freq_value1 = ear1values[i][0];
+				max_freq1 = i;
+			}
+			//printf("freq: %d\tEar0: %f\tEar1: %f\n", i, ear0values[i][0], ear1values[i][0]);
+		}
+
+
+
 		for (j=0; j<32; j++)
 			if (max_value < 0.00001 * intensities[j])
 			{
@@ -143,16 +174,29 @@ void arch13( WORLD_TYPE *w )
 				max_value = green_intensities[j-32];
 			}
 
+		float ear_weight = 0.3;
+		if (max_freq0 == 5)
+			if (max_value < max_freq_value0 * ear_weight)
+			{
+				max_value = max_freq_value0 * ear_weight;
+				max_index = 63;
+			}
+
+		if (max_freq1 == 5)
+			if (max_value < max_freq_value1 * ear_weight)
+			{
+				max_value = max_freq_value1 * ear_weight;
+				max_index = 64;
+			}
 
 		// Giant winner take all
-		float angles[63] = {30, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
+		float angles[65] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 45, -45};
 
 		/*
 		for (j=0; j<31; j++)
 			printf("%d\t%f - %f, %f, %f\n", j+1, green_intensities[j+1], eyevalues[j][0], eyevalues[j][1], eyevalues[j][2]);
 		*/
 
-		
 		// Winner Take All For Green Intensities
 		int max_intensity_index = 0;
 		float max_itensity = 0;
@@ -173,7 +217,7 @@ void arch13( WORLD_TYPE *w )
 		set_agent_body_angle(a, bodyth + angles[max_index]) ;
 
 
-		// Winner Take All For Green Intensities
+		// Winner Take All For All Intensities
 		max_intensity_index = 15;
 		max_itensity = 0;
 		for (i=0; i<31; i++)
@@ -191,7 +235,7 @@ void arch13( WORLD_TYPE *w )
 		skinvalues = extract_soma_receptor_values_pointer( a );
 		nsomareceptors = get_number_of_soma_receptors( a );
 
-		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+		float weights[8] = {1, 1, 0, 0, 0, 0, 0, 1};
 		float v_col = 0;
 		int y_col = 0;
 
@@ -217,17 +261,26 @@ void arch13( WORLD_TYPE *w )
 			read_visual_sensor(w,a);
 			eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
+
+
 			int i;
 			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
-			
+			float inputs[4] = {1, eyevalues[max_intensity_index][0], eyevalues[max_intensity_index][1], eyevalues[max_intensity_index][2]};
+
 			for (i=0; i<4; i++)
 				v += classification[i] * inputs[i];
 
+			/*
+			printf("Max: %d\n", max_intensity_index);
+			for (i=0; i<31; i++)
+				printf("%d: %f\t%f\t%f\n", i, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]);
+			*/
 
 			if (v > 0)
 			{
 				delta_energy = eat_colliding_object(w, a, 0);
+				delta_energy = eat_colliding_object(w, a, 1);
+				delta_energy = eat_colliding_object(w, a, 7);
 				if (delta_energy > 0)
 					green++;
 				else if (delta_energy == 0) {
@@ -255,7 +308,7 @@ void arch13( WORLD_TYPE *w )
 
 		// Stop Gate Neuron
 		int v_stop = energy + mi;
-		int y_stop = 1;
+		float y_stop = 1;
 		if (v_stop > 1)
 			y_stop = 0;
 
@@ -263,10 +316,13 @@ void arch13( WORLD_TYPE *w )
 
 		//printf("E: %f, MI: %f, FS: %f\n", a->instate->metabolic_charge, green_intensities[15], forwardspeed);
 
+		//printf("Max Index: %d\tMax Value: %f\tEar0: %f\tEar1: %f\tFS: %f\n", max_index, max_value, ear0values[5][0]*ear_weight, ear1values[5][0]*ear_weight, forwardspeed);
 
 		// move the agents body
 		set_forward_speed_agent( a, forwardspeed ) ;
 		move_body_agent( a ) ;
+
+
 
 		/*
 		if (nlifetimes != 3)

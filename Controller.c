@@ -25,11 +25,11 @@
 // #include "./Architectures/arch5.c"
 // #include "./Architectures/arch6.c"
 // #include "./Architectures/arch7.c"
-#include "./Architectures/arch8.c"
+// #include "./Architectures/arch8.c"
 // #include "./Architectures/arch9.c"
 // #include "./Architectures/arch10.c"
 // #include "./Architectures/arch11.c"
-// #include "./Architectures/arch12.c"
+#include "./Architectures/arch12.c"
 // #include "./Architectures/arch13.c"
 // #include "./Architectures/arch14.c"
 
@@ -44,11 +44,11 @@ void agents_controller( WORLD_TYPE *w )
 	// arch5(w);
 	// arch6(w);
 	// arch7(w);
-	arch8(w);
+	// arch8(w);
 	// arch9(w);
 	// arch10(w);
 	// arch11(w);
-	// arch12(w);
+	arch12(w);
 	// arch13(w);
 	// arch14(w);
 }

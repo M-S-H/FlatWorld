@@ -10,7 +10,6 @@ int lifetimes[ML];			// Collects simtime
 int red=0, blue=0, green=0;	// Collects food eaten
 
 float w_oclass[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
-float classification[4] = {-0.462606, -0.826092, 2.046825, -0.854206};
 
 void arch8( WORLD_TYPE *w )
 { /* Adhoc function to test agents, to be replaced with NN controller. tpc */
@@ -37,14 +36,12 @@ void arch8( WORLD_TYPE *w )
 	/* Initialize */
 	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
-	h = 0.0;
 	
 	/* test if agent is alive. if so, process sensors and actuators.  if not, report death and 
 		 reset agent & world */
 
 	if( a->instate->metabolic_charge>0.0 )
 	{	
-		// /*
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
@@ -60,7 +57,7 @@ void arch8( WORLD_TYPE *w )
 
 			// Intensity Neuron
 				intensities[i] = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
-				//printf("%d: %f\n", i, intensities[i]);
+				//printf("%d: %f\t%f %f %f\n", i, intensities[i], eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]);
 			
 			// Winner Takes All
 				if (green_component > max_green_value)
@@ -97,15 +94,11 @@ void arch8( WORLD_TYPE *w )
 
 		// Classify and Eat the object
 			if (y_collision > 0)
-			{
-				// Read eye values before eating
-				read_visual_sensor(w,a);
-				eyevalues = extract_visual_receptor_values_pointer(a,0);
-				
+			{				
 				// Intensity Neuron / Winner Takes All
 					int brightest_value = 0;
 					int brightest_index = 0;
-					for (i=0; i<31; i++)
+					for (i=0; i<30; i++)
 					{
 						if (intensities[i] > brightest_value)
 						{
@@ -125,13 +118,6 @@ void arch8( WORLD_TYPE *w )
 					// Eat if classified as a reward
 					if (v_classification > 0)
 						y_classification = 1;
-
-					printf("BI: %i\n", brightest_index);
-					for (j=0; j<31; j++)
-						printf("%d: %f\n", j, intensities[j]);
-					//printf("BI: %d\n", brightest_index);
-					printf("%f, %f, %f, %f, %f\n", eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2], v_classification, y_classification);
-
 
 				// Eat Neuron
 					if (y_classification > 0)
@@ -153,96 +139,13 @@ void arch8( WORLD_TYPE *w )
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 			basal_metabolism_agent(a);
 
-		// */	
-	
-		/*
-		// Movement
-		read_visual_sensor(w,a);
-		eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-		float intensities[31];
-		int i;
-
-		// Compute Intensities
-		for (i=0; i<30; i++) 
-			intensities[i] = 0*eyevalues[i][0] + 1*eyevalues[i][1] + 0*eyevalues[i][2];
-
-		// Winner Take All
-		int max_intensity_index =0;
-		float max_itensity = 0;
-		for (i=0; i<30; i++)
-		{
-			if (intensities[i] > max_itensity)
-			{
-				max_itensity = intensities[i];
-				max_intensity_index = i;
-			}
-		}
-
-		// Calculate Angle
-		float angles[31] = {-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_intensity_index]) ;
-
-
-		// Collision Neuron
-		collision_flag = read_soma_sensor(w, a);		 	
-		skinvalues = extract_soma_receptor_values_pointer( a );
-		nsomareceptors = get_number_of_soma_receptors( a );
-
-		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
-		float v_col = 0;
-		int y_col = 0;
-
-		for (i=0; i<8; i++)
-		{
-			v_col += skinvalues[i][0] * weights[i];
-		}
-
-		if (v_col > 0.0)
-			y_col = 1;
-		else
-			y_col = 0;
-
-		// Eat Neuron
-		int v_eat = 0;
-		int weight = 1;
-		v_eat = y_col * weight;
-
-		float desired_value = 0;
-
-		if (v_eat > 0)
-		{
-			read_visual_sensor(w,a);
-			eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-			int i;
-			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
-			
-			for (i=0; i<4; i++)
-				v += classification[i] * inputs[i];
-
-			if (v > 0)
-				delta_energy = eat_colliding_object(w, a, 0);
-		}		
-
-		// move the agents body
-		set_forward_speed_agent( a, forwardspeed ) ;
-		move_body_agent( a ) ;
-
-		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		//for (i=0; i<5; i++)
-			basal_metabolism_agent(a) ;
-		
-		*/
-
 		simtime++ ;
 
 	} // end agent alive condition
 	else
 	{		
 		lifetimes[nlifetimes] = simtime;
+		printf("Food Eaten:\nRed: %d\tGreen: %d\tBlue: %d\n", red, green, blue);
 
 		// Example of agent is dead condition
 		printf("agent_controller- Agent has died, eating %d objects. simtime: %d\n",a->instate->itemp[0], simtime ) ;
