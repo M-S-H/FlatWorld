@@ -1,7 +1,12 @@
 // Architecture 7
 
 /*
-	
+	The agent will now compute the intensity and classify for each eye. The
+	classification output is used to gate the intensity outputs. The resulting
+	outputs are then sent to a winner take all network, where the outputs are
+	the inputs to a summation neuron, where the input weights correspond to
+	angle of the eyes. Therefore the agent will change direction to face the
+	brightest green object.
 */
 
 int lifetimes[ML];			// Collects simtime
@@ -32,7 +37,6 @@ void arch7( WORLD_TYPE *w )
 	char timestamp[30] ;
 	
 	/* Initialize */
-	//forwardspeed = 0.05 * nlifetimes; 
 	forwardspeed = 0.05;
 	a = w->agents[0] ; /* get agent pointer */
 	h = 0.0;
@@ -42,51 +46,50 @@ void arch7( WORLD_TYPE *w )
 
 	if( a->instate->metabolic_charge>0.0 )
 	{	
-		// /* 
 		read_visual_sensor(w,a);
 		eyevalues = extract_visual_receptor_values_pointer(a, 0);
 
 		int max_green_index = 15;
 		float max_green = 0;
 
-		// Eyes
+		// Eye Computation
 		float green_intensities[31];
 		float intensities[31];
 		int i;
 		for (i=0; i<31; i++)
 		{
 			// Intensity Neuron
-			float intensity;
-			intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
-			intensities[i] = intensity;
+				float intensity;
+				intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
+				intensities[i] = intensity;
 
-			// Eye Classifiers
-			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
-			int j;
-			float v_eyeclass = 0;
-			for (j=0; j<4; j++)
-				v_eyeclass += w_oclass[j] * inputs[j];
+			// Eye Classification Neurons
+				float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
+				int j;
+				float v_eyeclass = 0;
+				for (j=0; j<4; j++)
+					v_eyeclass += w_oclass[j] * inputs[j];
 
-			int y_eyeclass = 0;
-			if (v_eyeclass > 0)
-				y_eyeclass = 1;
+				int y_eyeclass = 0;
+				if (v_eyeclass > 0)
+					y_eyeclass = 1;
 
 			// Gate the intensities
-			green_intensities[i] = (1*y_eyeclass) * (1*intensity);
+				green_intensities[i] = (1*y_eyeclass) * (1*intensity);
 
 			// Green Winner Takes All
-			if (max_green < green_intensities[i])
-			{
-				max_green = green_intensities[i];
-				max_green_index = i;
-			}
+				if (max_green < green_intensities[i])
+				{
+					max_green = green_intensities[i];
+					max_green_index = i;
+				}
 		}
 		
 
 		// Direction Neuron
-		float angles[31] = {-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_green_index]);
+			float angles[31] = {-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
+			read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
+			set_agent_body_angle(a, bodyth + angles[max_green_index]);
 
 
 		// Collision Neuron
@@ -187,7 +190,7 @@ void arch7( WORLD_TYPE *w )
 		/* Accumulate lifetime statistices */
 		avelifetime += (float)simtime ;
 		
-		nlifetimes++ ;
+		nlifetimes++;
 		if( nlifetimes >= maxnlifetimes )
 		{
 			avelifetime /= (float)maxnlifetimes;
