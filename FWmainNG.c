@@ -21,7 +21,7 @@
 #define FALSE 0
 #define PI2 6.283185307179586
 #define PI 3.141592653589793
-#define ML 10
+#define ML 200
 
 
 /* Global pointer to current Flatworld */
