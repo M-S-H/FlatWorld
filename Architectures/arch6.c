@@ -160,7 +160,7 @@ void arch6( WORLD_TYPE *w )
 
 			// Write out data
 			FILE *fp;
-			fp = fopen("./Results/arch6 Lifetimes.csv", "w");
+			fp = fopen("./Results/Arch6 Lifetimes.csv", "w");
 			for(i=0; i<maxnlifetimes; i++)
 				fprintf(fp, "%d, %d\n", i, lifetimes[i]);
 			fclose(fp);

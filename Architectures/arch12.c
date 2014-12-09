@@ -103,7 +103,7 @@ void arch12( WORLD_TYPE *w )
 		
 
 		// Direction Neuron
-			float angles[63] = {60,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
+			float angles[63] = {30,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
 			read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
 			set_agent_body_angle(a, bodyth + angles[max_all_index]);
 
@@ -128,26 +128,10 @@ void arch12( WORLD_TYPE *w )
 		// Classify and Eat the object
 			if (y_collision > 0)
 			{
-				// Read eye values before eating
-				read_visual_sensor(w,a);
-				eyevalues = extract_visual_receptor_values_pointer(a,0);
-				
-				// Intensity Neuron / Winner Takes All
-					int brightest_value = 0;
-					int brightest_index = 0;
-					for (i=0; i<31; i++)
-					{
-						if (intensities[i] > brightest_value)
-						{
-							brightest_value = intensities[i];
-							brightest_index = i;
-						}
-					}
-
 				// Classification Neuron
 					int j;
 					float v_classification = 0, y_classification = 0;
-					float x_classification[4] = {1, eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2]};
+					float x_classification[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
 					for (j=0; j<4; j++)
 						v_classification += w_oclass[j] * x_classification[j];
 
@@ -194,213 +178,7 @@ void arch12( WORLD_TYPE *w )
 			basal_metabolism_agent(a);
 
 
-
-		/*
-		// Movement
-		read_visual_sensor(w,a);
-		eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-		float intensities[32];
-		float green_intensities[31];
-		int i;
-
-		float total_intensity = 0;
-
-		// Compute Intensities
-		for (i=0; i<31; i++) 
-		{
-			// Intensity Neuron
-			float intensity;
-			intensity = 1*eyevalues[i][0] + 1*eyevalues[i][1] + 1*eyevalues[i][2];
-			total_intensity += intensity;
-			
-			float inputs[4] = {1, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]};
-		
-			
-			// Winner Takes all for contrast enhancement
-			int max_component_index = 0;
-			float max_component_value = 0;
-			int j;
-			for (j=1; j<4; j++)
-			{
-				if (max_component_value < inputs[j])
-				{
-					max_component_value = inputs[j];
-					max_component_index = j;
-				}
-			}
-
-			inputs[1] = 0;
-			inputs[2] = 0;
-			inputs[3] = 0;
-			inputs[max_component_index] = 1;
-
-			//for (j=0; j<31; j++)
-			//printf("%d\t%f,  %f,  %f,  %f\n", i+1, intensity, inputs[0], inputs[1], inputs[2]);
-			//printf("%d\t%f,  %f,  %f,  %f\n", i+1, intensity, eyevalues[i][0], eyevalues[i][1], eyevalues[i][2]);
- 
-			// Classification Neuron
-			float v = 0;
-			for (j=0; j<4; j++)
-				v += classification[j] * inputs[j];
-
-			int y = 0;
-			
-			if (v > 0)
-				y = 1;
-
-			// Gate Neuron
-			green_intensities[i] = (1*y) * (1*intensity);
-			intensities[i+1] = intensity;
-		}
-
-		// Do I see anything? Neuron
-		intensities[0] = 0;
-		int max_index = 0;
-		float max_value = 0;
-		int j = 0;
-
-		for (j=0; j<32; j++)
-			if (max_value < 0.00001 * intensities[j])
-			{
-				max_index = j;
-				max_value = 0.00001 * intensities[j];
-			}
-
-		for (j=32; j<63; j++)
-			if (max_value < green_intensities[j-32])
-			{
-				max_index = j;
-				max_value = green_intensities[j-32];
-			}
-
-
-		// Giant winner take all
-		float angles[63] = {30, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45, -45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,-15.,-12.,-9.,-4.,-3.,0.,3.,4.,9.,12.,15.,18.,21.,24.,27.,30.,33.,36.,39.,42.,45};
-
-		
-		// Winner Take All For Green Intensities
-		int max_intensity_index = 0;
-		float max_itensity = 0;
-		for (i=0; i<32; i++)
-		{
-			if (green_intensities[i] > max_itensity)
-			{
-				max_itensity = green_intensities[i];
-				max_intensity_index = i;
-			}
-		}
-
-		// Calculate Angle
-		//float angles[32] = {30, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-		
-
-		read_agent_body_position( a, &bodyx, &bodyy, &bodyth );
-		set_agent_body_angle(a, bodyth + angles[max_index]) ;
-
-
-		// Winner Take All For Green Intensities
-		max_intensity_index = 15;
-		max_itensity = 0;
-		for (i=0; i<31; i++)
-		{
-			if (intensities[i] > max_itensity)
-			{
-				max_itensity = intensities[i];
-				max_intensity_index = i;
-			}
-		}
-
-
-		// Collision Neuron
-		collision_flag = read_soma_sensor(w, a);		 	
-		skinvalues = extract_soma_receptor_values_pointer( a );
-		nsomareceptors = get_number_of_soma_receptors( a );
-
-		float weights[8] = {1, 0, 0, 0, 0, 0, 0, 0};
-		float v_col = 0;
-		int y_col = 0;
-
-		for (i=0; i<8; i++)
-		{
-			v_col += skinvalues[i][0] * weights[i];
-		}
-
-		if (v_col > 0.0)
-			y_col = 1;
-		else
-			y_col = 0;
-
-		// Eat Neuron
-		int v_eat = 0;
-		int weight = 1;
-		v_eat = y_col * weight;
-
-		float desired_value = 0;
-
-		if (v_eat > 0)
-		{
-			read_visual_sensor(w,a);
-			eyevalues = extract_visual_receptor_values_pointer(a, 0);
-
-			int i;
-			float v = 0;
-			float inputs[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
-			
-			for (i=0; i<4; i++)
-				v += classification[i] * inputs[i];
-
-
-			if (v > 0)
-			{
-				delta_energy = eat_colliding_object(w, a, 0);
-				if (delta_energy > 0)
-					green++;
-				else if (delta_energy == 0) {
-					blue++;
-	
-				}
-				else 
-				{
-					red++;
-	
-				}
-			}
-		}
-
-
-		// Energy Level Neuron
-		int energy = 0;
-		if (a->instate->metabolic_charge > 0.9)
-			energy = 1;
-
-		// Max Intensity
-		int mi = 0;
-		if (green_intensities[15] > 0.9)
-			mi = 1;
-
-		// Stop Gate Neuron
-		int v_stop = energy + mi;
-		int y_stop = 1;
-		if (v_stop > 1)
-			y_stop = 0;
-
-		forwardspeed = y_stop * forwardspeed;
-
-		//printf("E: %f, MI: %f, FS: %f\n", a->instate->metabolic_charge, green_intensities[15], forwardspeed);
-
-
-		// move the agents body
-		set_forward_speed_agent( a, forwardspeed ) ;
-		move_body_agent( a ) ;
-
-		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
-		//for (i=0; i<5; i++)
-			basal_metabolism_agent(a) ;
-
-		*/
-			
-		simtime++ ;
+		simtime++;
 
 	} // end agent alive condition
 	else

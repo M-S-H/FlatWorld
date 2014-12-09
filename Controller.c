@@ -29,7 +29,7 @@
 // #include "./Architectures/arch9.c"
 // #include "./Architectures/arch10.c"
 // #include "./Architectures/arch11.c"
-#include "./Architectures/arch12.c"
+// #include "./Architectures/arch12.c"
 // #include "./Architectures/arch13.c"
 // #include "./Architectures/arch14.c"
 
