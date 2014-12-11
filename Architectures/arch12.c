@@ -128,10 +128,22 @@ void arch12( WORLD_TYPE *w )
 		// Classify and Eat the object
 			if (y_collision > 0)
 			{
+				// Intensity Neuron / Winner Takes All
+					int brightest_value = 0;
+					int brightest_index = 0;
+					for (i=0; i<31; i++)
+					{
+						if (intensities[i] > brightest_value)
+						{
+							brightest_value = intensities[i];
+							brightest_index = i;
+						}
+					}
+
 				// Classification Neuron
 					int j;
 					float v_classification = 0, y_classification = 0;
-					float x_classification[4] = {1, eyevalues[15][0], eyevalues[15][1], eyevalues[15][2]};
+					float x_classification[4] = {1, eyevalues[brightest_index][0], eyevalues[brightest_index][1], eyevalues[brightest_index][2]};
 					for (j=0; j<4; j++)
 						v_classification += w_oclass[j] * x_classification[j];
 
@@ -139,8 +151,11 @@ void arch12( WORLD_TYPE *w )
 					if (v_classification > 0)
 						y_classification = 1;
 
+
+
 				// Eat Neuron
 					if (y_classification > 0)
+					//if (eyevalues[15][1] > eyevalues[15][0] && eyevalues[15][1] > eyevalues[15][2])
 					{
 						float delta_energy = eat_colliding_object(w,a,0);
 						if (delta_energy > 0)
@@ -176,7 +191,6 @@ void arch12( WORLD_TYPE *w )
 
 		// decrement metabolic charge by basil metabolism rate.  DO NOT REMOVE THIS CALL
 			basal_metabolism_agent(a);
-
 
 		simtime++;
 
